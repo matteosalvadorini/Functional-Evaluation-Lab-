@@ -24,12 +24,92 @@ t = (0:n_sample-1) / fs_channels;
 t=t';
 
 figure()
+tiledlayout(6,3)
 
+nexttile;
+plot(t,rightTA_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Tibialis anterior R ');
 
+nexttile;
+plot(t,rightGAL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Gastro lat R');
 
+nexttile;
+plot(t,rightSOL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('SoleusR');
+
+nexttile;
+plot(t,rightGAM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Gastro med R');
+
+nexttile;
+plot(t,rightRF_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Rectus R');
+
+nexttile;
+plot(t,rightVL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Vastus Let R');
+
+nexttile;
+plot(t,rightVM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Vastus Med R');
+
+nexttile;
+plot(t,rightSM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Semitendinous R');
+
+nexttile;
+plot(t,leftTA_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Tibialis anterior L');
+
+nexttile;
 plot(t,leftGAL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
 set(gca,'FontSize',12);
+title('Gastro lat L');
 
+nexttile;
+plot(t,leftSOL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Soleus L');
+
+nexttile;
+plot(t,leftGAM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Gastro med L');
+
+nexttile;
+plot(t,leftRF_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Rectus L');
+
+nexttile;
+plot(t,leftVL_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Vastus Lat L');
+
+nexttile;
+plot(t,leftGAM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Vastus Med L');
+
+nexttile;
+plot(t,leftSM_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('Semitedinous L');
+
+nexttile;
+plot(t,trigger_resampled), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+set(gca,'FontSize',12);
+title('trigger');
 
 %% BAND-PASS FILTERING
 
@@ -48,13 +128,13 @@ leftGAL_f = filtfilt(b,a,leftGALisnan);
 
 
 n_sample = size(leftGAL_f, 1);
-t = (0:n_sample-1) / fs_channels;
-t=t';
+t_f = (0:n_sample-1) / fs_channels;
+t_f=t_f';
 
 
 % plot of the filtered data 
 
 figure()
 
-plot(t,leftGAL_f), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
+plot(t_f,leftGAL_f), xlabel('time [s]'), ylabel('Crank angle [°]'), xlim([0 max(t)]),sgtitle('Right Leg','FontSize',14,'FontWeight','b');
 set(gca,'FontSize',12);
