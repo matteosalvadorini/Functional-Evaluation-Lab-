@@ -104,4 +104,51 @@ end
 
 
 
-%%
+
+
+
+
+
+%% --- CRANK ANGLE CALCULATION & SEGMENTATION ---
+% Assume 'data' is the matrix after resampling (Channels 1-16: EMG, Channel 17: Trigger)
+% Trigger Signal: Pulse (0-3000 mV) at 360° -> 0° transition (TDC)
+% --- CYCLE SEGMENTATION LOGIC (TRIGGER CHANNEL 17) ---
+% Channel 17 records an analog trigger signal (0 to 3000 mV).
+% A pulse is generated each time the crank passes the 360° to 0° transition.
+% These peaks represent the "Zero Point" (Top Dead Center) of each pedaling cycle
+% and are used to segment the continuous EMG data into individual revolutions.
+
+
+fs = 2222.22;
+trigger_chan = data{:, 17}; 
+
+% 1. Trova gli indici dei picchi (i tuoi "segnalibri")
+[~, stops] = findpeaks(trigger_chan, 'MinPeakHeight', 2, 'MinPeakDistance', fs*1);
+
+% 2. Crea il tempo totale (CrankAngle_time) - NON RIPARTE DA ZERO
+CrankAngle_time = (0:length(trigger_chan)-1)' / fs;
+
+% 3. Crea l'Angolo Continuo (CrankAngle)
+CrankAngle = zeros(length(trigger_chan), 1); 
+
+for i = 1:length(stops)-1
+    start_idx = stops(i);
+    end_idx = stops(i+1);
+    
+    % Calcoliamo l'accumulo dei gradi: 
+    % Giro 1: da 0 a 360
+    % Giro 2: da 360 a 720
+    % Giro 3: da 720 a 1080...
+    offset_gradi = (i-1) * 360;
+    
+    n_points = end_idx - start_idx;
+    
+    % Genera i gradi per questo specifico intervallo
+    CrankAngle(start_idx:end_idx-1) = linspace(offset_gradi, offset_gradi + 360, n_points);
+end
+
+% Riagganciamo l'ultima parte dopo l'ultimo picco (opzionale)
+CrankAngle(stops(end):end) = (offset_gradi + 360);
+
+
+%% IDENTIFICATION OF VOLUNTARY PEDALING PHASE 
