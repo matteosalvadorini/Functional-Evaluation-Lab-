@@ -42,9 +42,15 @@ W= [20; 400];
 Wn = W/(fs_channels/2); %frequenza noralizzata
 [b,a ]= butter(5,Wn,"bandpass");
 
-leftGALisnan = ~isnan(leftGAL_resampled);
+leftGALisnan = fillmissing(leftGAL_resampled, 'constant', 0);
 
-leftGAL_f = filtfilt(b,a,leftGAL);
+leftGAL_f = filtfilt(b,a,leftGALisnan);
+
+
+n_sample = size(leftGAL_f, 1);
+t = (0:n_sample-1) / fs_channels;
+t=t';
+
 
 % plot of the filtered data 
 
