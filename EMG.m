@@ -152,3 +152,31 @@ CrankAngle(stops(end):end) = (offset_gradi + 360);
 
 
 %% IDENTIFICATION OF VOLUNTARY PEDALING PHASE 
+
+[ii,ang]=ginput(2);
+
+[m,locsxi]=min(abs(CrankAngle_time-ii(1)));
+[m,locsei]=min(abs(t-ii(1)));
+[m,locsxf]=min(abs(CrankAngle_time-ii(2)));
+[m,locsef]=min(abs(t-ii(2)));
+
+
+figure()
+subplot(10,1,1), plot(CrankAngle_time,CrankAngle),ylabel('Crank angle'), xlim([min(CrankAngle_time) max(CrankAngle_time)]),title('Right Leg');
+subplot(10,1,2), plot(t,data_array(:,1)), ylabel('EMG-GlMax'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,3), plot(t,data_array(:,2)), ylabel('EMG-BFlong'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,4), plot(t,data_array(:,3)), ylabel('EMG-BFshort'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,5), plot(t,data_array(:,4)), ylabel('EMG-GL'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,6), plot(t,data_array(:,5)), ylabel('EMG-So'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,7), plot(t,data_array(:,6)), ylabel('EMG-TFL'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,8), plot(t,data_array(:,7)), ylabel('EMG-RF'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,9), plot(t,data_array(:,8)), ylabel('EMG-VL'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,10), plot(t,data_array(:,9)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,11), plot(t,data_array(:,10)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,12), plot(t,data_array(:,11)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,13), plot(t,data_array(:,12)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,14), plot(t,data_array(:,13)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,15), plot(t,data_array(:,14)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,16), plot(t,data_array(:,15)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+subplot(10,1,17), plot(t,data_array(:,16)), ylabel('EMG-TA'), xlim([min(EMG_time) max(EMG_time)]);
+
