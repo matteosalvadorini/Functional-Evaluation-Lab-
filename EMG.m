@@ -271,7 +271,8 @@ EMG_mean=zeros(9,360);
 
 figure(30)
 for n=1:17
-    EMG_matOK{n}.values(:,1:30)=EMG_mat{n}.values(:,good_cycle);
+   
+EMG_matOK{n}.values(:, 1:length(good_cycle)) = EMG_mat{n}.values(:, good_cycle);
     
     norm_value(n)=median(max(EMG_matOK{n}.values));
     EMG_matOK_norm{n}.values(:,:)=EMG_matOK{n}.values(:,:)./norm_value(n);
