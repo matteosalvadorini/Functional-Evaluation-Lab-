@@ -25,12 +25,39 @@ channels = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
 
 
 
+%convert struct to array: easier to work on
+data_array1 = struct2array(data_resampled);
+
+%different frequency, we have to resample at same frequency
+fs_emg = 2148.15; %channels (1-16)
+fs_trig = 2222.22; % channel (17)
+fs_target = 2000;  % Una frequenza comune a cui vogliamo portare tutto (es. 2000 Hz)
+
+
+emg_raw = data_array1(:, 1:16);
+trig_raw = data_array1(:, 17);  
+
+% Resampling channels 1-16 muscles
+emg_resampled = resample(emg_raw, fs_target, round(fs_emg));
+
+% Resampling channel 17 trigger
+trig_resampled = resample(trig_raw, fs_target, round(fs_trig));
+
+% find min length betweend the 2 signals resampled
+min_len = min(size(emg_resampled, 1), length(trig_resampled));
+
+% Taglia entrambi alla stessa lunghezza
+emg_final = emg_resampled(1:min_len, :);
+trig_final = trig_resampled(1:min_len);
+
+% Ora puoi riunirli in un'unica matrice "pulita"
+data_array = [emg_final, trig_final]; 
+fs_channels = fs_target; % Da qui in poi userai sempre 2000 Hz
 
 
 %% PLOT RAW DATA
 
-%convert struct to array: easier to plot
-data_array = struct2array(data_resampled);
+
 
 %calculate time for one channel, will be the same length for the others
 n_sample = size(data_array, 1);
@@ -119,12 +146,12 @@ end
 % and are used to segment the continuous EMG data into individual revolutions.
 
 
-fs = 2222.22;
+
 trigger_chan = data_array(:, 17); 
 
 % 1.  findpeaks
 % Se il segnale è rumoroso, prova ad abbassare MinPeakHeight a 1 o 1.5
-[~, stops] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs*1);
+[~, stops] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
 
 % --- CONTROLLO DI SICUREZZA ---
 if isempty(stops)
@@ -179,7 +206,7 @@ end
 
 %% 6 - Identification of the pedaling cycles
 % Find the end of each pedaling cycling based on the CrankAngle
-[pks_angle,locs_angle] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs*1);
+[pks_angle,locs_angle] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
 
 
 figure()
