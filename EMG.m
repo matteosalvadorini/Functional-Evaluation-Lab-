@@ -134,37 +134,6 @@ end
 
 
 
-
-%% --- CRANK ANGLE CALCULATION & SEGMENTATION ---
-
-% 1. Definiamo la lunghezza basandoci sull'EMG filtrato (quello che vuoi analizzare)
-N = size(data_array, 1); 
-
-
-% 2. FORZIAMO il trigger ad avere la stessa lunghezza dell'EMG
-% Prendi il canale 17 dal data_array originale ma taglialo a N
-trigger_sync = data_array(1:N, 17); 
-
-% 3. Trova i picchi DIRETTAMENTE su questo trigger tagliato
-[~, stops] = findpeaks(trigger_sync, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
-
-% 4. Ricostruisci il CrankAngle partendo dai picchi APPENA TROVATI
-CrankAngle = nan(N, 1);
-for i = 1:length(stops)-1
-    start_idx = stops(i);
-    end_idx = stops(i+1);
-    n_points = end_idx - start_idx;
-    
-    % L'angolo DEVE partire da 0 esattamente dove c'è il picco stops(i)
-    CrankAngle(start_idx:end_idx-1) = linspace(0, 360, n_points);
-end
-
-% 5. Crea l'asse del tempo UNICO per entrambi
-t_unico = (0:N-1)' / fs_new;
-
-
-
-
 %% 4 - Power spectral density estimate & extraction of spectral parameters
 
 
@@ -193,46 +162,41 @@ end
 
 
 %% 6 - Identification of the pedaling cycles
-% I picchi trovati sul trigger (stops o locs_angle) sono gli indici dei campioni
-[pks_angle, locs_angle] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
 
-% Poiché abbiamo resampato tutto a 2000Hz, l'indice sul trigger è uguale all'indice sull'EMG
-locs_emg = locs_angle; 
 
-figure('Name', 'Check Sincronizzazione Cicli');
-ax1 = subplot(211);
-plot(t, CrankAngle), ylabel('Crank Angle [°]'), xlabel('Time [s]'), title('Angolo Pedivella');
+% 1. Trova gli indici dei picchi nel canale trigger (Colonna 17)
+% Usiamo la frequenza originale (es. 2222.22) se non hai ancora resampato
+[pks_trig, locs_trig] = findpeaks(data_array(:,17), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
+
+% 2. Crea l'asse del tempo basato sulla lunghezza di data_array
+t_array = (0:size(data_array, 1)-1)' / fs_channels;
+
+% 3. Grafico di confronto
+figure('Name', 'Sincronizzazione Canale 17 e Canale 7');
+
+% Subplot 1: Canale Trigger (17)
+ax1 = subplot(2,1,1);
+plot(t_array, data_array(:,17), 'Color', [0.4 0.4 0.4]); % Grigio
 hold on;
-plot(t(locs_angle), CrankAngle(locs_angle), 'ro', 'MarkerFaceColor', 'r');
-
-ax2 = subplot(212);
-% Usiamo t (che deve essere lungo quanto data_f) per l'asse X
-plot(t, data_f(:,7)), ylabel('EMG - Rectus Femoralis'), xlabel('Time [s]'), title('Identificazione Cicli su EMG');
-hold on;
-plot(t(locs_emg), data_f(locs_emg, 7), 'ro', 'MarkerFaceColor', 'r');
-
-linkaxes([ax1, ax2], 'x');
+plot(t_array(locs_trig), data_array(locs_trig, 17), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
+ylabel('Trigger [mV]');
+title('Canale 17 - Picchi identificati');
 grid on;
 
-
-
-%% 
-
-
-figure('Name', 'Check Sincronizzazione Cicli');
-ax1 = subplot(211);
-plot(t, CrankAngle), ylabel('Crank Angle [°]'), xlabel('Time [s]'), title('Angolo Pedivella');
+% Subplot 2: Canale 7 (EMG Rectus Femoralis)
+ax2 = subplot(2,1,2);
+plot(t_array, data_array(:,6), 'b'); % Blu
 hold on;
-plot(t(locs_angle), CrankAngle(locs_angle), 'ro', 'MarkerFaceColor', 'r');
-
-ax2 = subplot(212);
-% Usiamo t (che deve essere lungo quanto data_f) per l'asse X
-plot(t, data_f(:,1)), ylabel('EMG - Rectus Femoralis'), xlabel('Time [s]'), title('Identificazione Cicli su EMG');
-hold on;
-plot(t(locs_emg), data_f(locs_emg, 7), 'ro', 'MarkerFaceColor', 'r');
-
-linkaxes([ax1, ax2], 'x');
+% USIAMO GLI STESSI IDENTICI INDICI (locs_trig)
+plot(t_array(locs_trig), data_array(locs_trig, 6), 'ro', 'MarkerFaceColor', 'r');
+ylabel('EMG - Canale 7 [mV]');
+xlabel('Tempo [s]');
+title('Canale 7 - Punti di sincronizzazione');
 grid on;
+
+% Collega gli assi per lo zoom
+linkaxes([ax1, ax2], 'x');
+
 
 %% 7 - Time normalization of all pedaling cycles
 
