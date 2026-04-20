@@ -33,8 +33,8 @@ fs_emg = 2148.15; %channels (1-16)
 fs_trig = 2222.22; % channel (17)
 fs_target = 2000;  % frequency target
 
-emg_raw = data_array1(:, 1:16);
-trig_raw = data_array1(:, 17);  
+emg_raw = data_array1(:, 2:17);
+trig_raw = data_array1(:, 1);  
 
 % Resampling channels 1-16 muscles
 emg_resampled = resample(emg_raw, fs_target, round(fs_emg));
@@ -136,51 +136,40 @@ end
 
 
 %% --- CRANK ANGLE CALCULATION & SEGMENTATION ---
-% Assume 'data' is the matrix after resampling (Channels 1-16: EMG, Channel 17: Trigger)
-% Trigger Signal: Pulse (0-3000 mV) at 360° -> 0° transition (TDC)
-% --- CYCLE SEGMENTATION LOGIC (TRIGGER CHANNEL 17) ---
-% Channel 17 records an analog trigger signal (0 to 3000 mV).
-% A pulse is generated each time the crank passes the 360° to 0° transition.
-% These peaks represent the "Zero Point" (Top Dead Center) of each pedaling cycle
-% and are used to segment the continuous EMG data into individual revolutions.
+%% --- RESET E SINCRONIZZAZIONE TOTALE ---
 
+% 1. Definiamo la lunghezza basandoci sull'EMG filtrato (quello che vuoi analizzare)
+N = size(data_f, 1); 
+fs_new = 2000; % La frequenza che hai scelto
 
+% 2. FORZIAMO il trigger ad avere la stessa lunghezza dell'EMG
+% Prendi il canale 17 dal data_array originale ma taglialo a N
+trigger_sync = data_array(1:N, 17); 
 
-trigger_chan = data_array(:, 17); 
+% 3. Trova i picchi DIRETTAMENTE su questo trigger tagliato
+[~, stops] = findpeaks(trigger_sync, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_new*0.8);
 
-% 1.  findpeaks
-% Se il segnale è rumoroso, prova ad abbassare MinPeakHeight a 1 o 1.5
-[~, stops] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
-
-% --- CONTROLLO DI SICUREZZA ---
-if isempty(stops)
-    error('ATTENZIONE: Nessun picco trovato nel canale trigger! Controlla la soglia MinPeakHeight.');
-end
-
-% 2. Inizializza il vettore CrankAngle
-CrankAngle = zeros(size(trigger_chan)); 
-
-% 3. Ciclo per riempire ogni rivoluzione tra 0 e 360
+% 4. Ricostruisci il CrankAngle partendo dai picchi APPENA TROVATI
+CrankAngle = nan(N, 1);
 for i = 1:length(stops)-1
     start_idx = stops(i);
     end_idx = stops(i+1);
-    
     n_points = end_idx - start_idx;
+    
+    % L'angolo DEVE partire da 0 esattamente dove c'è il picco stops(i)
     CrankAngle(start_idx:end_idx-1) = linspace(0, 360, n_points);
 end
 
-% 4. Gestione dei bordi (solo se stops non è vuoto)
-if stops(1) > 1
-    CrankAngle(1:stops(1)-1) = NaN;
-end
-CrankAngle(stops(end):end) = NaN;
+% 5. Crea l'asse del tempo UNICO per entrambi
+t_unico = (0:N-1)' / fs_new;
 
-CrankAngle_time = (0:length(trigger_chan)-1)' / fs;
+
+
 
 %% 4 - Power spectral density estimate & extraction of spectral parameters
 
 
-[P_EMG,F] = periodogram(data_array, rectwin(max(size(data_array))),512,fs); 
+[P_EMG,F] = periodogram(data_array, rectwin(max(size(data_array))),512,fs_channels); 
 
 % plot of the power spectral density estimate of the right RF
 figure ()
@@ -191,42 +180,60 @@ xlabel('Frequency (Hz)')
 ylabel('Power/frequency (dB/Hz)')
 grid on
 ylim([ -120 0])
-xlim([0 fs/2])
+xlim([0 fs_channels/2])
 
 %estimates the mean frequency & median frequency
 for n=1:12
-       Mean_freq(n,1)=meanfreq( data_array(:,n) , fs );
+       Mean_freq(n,1)=meanfreq( data_array(:,n) , fs_channels );
        Mean_freq(n,2) = meanfreq( P_EMG(:,n) , F ); 
 
-       Med_freq(n,1) = medfreq( data_array(:,n) , fs );
+       Med_freq(n,1) = medfreq( data_array(:,n) , fs_channels );
        Med_freq(n,2) = medfreq( P_EMG(:,n) , F ); 
 end
 
 
+
 %% 6 - Identification of the pedaling cycles
-% Find the end of each pedaling cycling based on the CrankAngle
-[pks_angle,locs_angle] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
+% I picchi trovati sul trigger (stops o locs_angle) sono gli indici dei campioni
+[pks_angle, locs_angle] = findpeaks(trigger_chan, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
+
+% Poiché abbiamo resampato tutto a 2000Hz, l'indice sul trigger è uguale all'indice sull'EMG
+locs_emg = locs_angle; 
+
+figure('Name', 'Check Sincronizzazione Cicli');
+ax1 = subplot(211);
+plot(t, CrankAngle), ylabel('Crank Angle [°]'), xlabel('Time [s]'), title('Angolo Pedivella');
+hold on;
+plot(t(locs_angle), CrankAngle(locs_angle), 'ro', 'MarkerFaceColor', 'r');
+
+ax2 = subplot(212);
+% Usiamo t (che deve essere lungo quanto data_f) per l'asse X
+plot(t, data_f(:,7)), ylabel('EMG - Rectus Femoralis'), xlabel('Time [s]'), title('Identificazione Cicli su EMG');
+hold on;
+plot(t(locs_emg), data_f(locs_emg, 7), 'ro', 'MarkerFaceColor', 'r');
+
+linkaxes([ax1, ax2], 'x');
+grid on;
 
 
-figure()
-ax1=subplot(211);
-plot(CrankAngle_time,CrankAngle), ylabel('Crank Angle'), xlabel('Time [s]'),title('Peaks Angle');
-hold on, plot(CrankAngle_time(locs_angle),CrankAngle(locs_angle),'o')
 
-% Locate the same peaks on the EMG data
+%% 
 
-locs_emg=zeros(size(locs_angle));
 
-for j=1:length(locs_angle)
-    [m,locs_emg(j)]=min(abs(t-CrankAngle_time(locs_angle(j))));
-end
+figure('Name', 'Check Sincronizzazione Cicli');
+ax1 = subplot(211);
+plot(t, CrankAngle), ylabel('Crank Angle [°]'), xlabel('Time [s]'), title('Angolo Pedivella');
+hold on;
+plot(t(locs_angle), CrankAngle(locs_angle), 'ro', 'MarkerFaceColor', 'r');
 
-ax2=subplot(212);
-plot(t,data_f(:,7)), ylabel('EMG-RF'), xlabel('Time [s]'),title('Cycles identification on EMG signals');
-hold on, plot(t(locs_emg),data_f(locs_emg,7),'o')
+ax2 = subplot(212);
+% Usiamo t (che deve essere lungo quanto data_f) per l'asse X
+plot(t, data_f(:,1)), ylabel('EMG - Rectus Femoralis'), xlabel('Time [s]'), title('Identificazione Cicli su EMG');
+hold on;
+plot(t(locs_emg), data_f(locs_emg, 7), 'ro', 'MarkerFaceColor', 'r');
 
-linkaxes([ax1, ax2],'x')
-
+linkaxes([ax1, ax2], 'x');
+grid on;
 
 %% 7 - Time normalization of all pedaling cycles
 
