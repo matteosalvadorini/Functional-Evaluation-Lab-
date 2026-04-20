@@ -25,7 +25,7 @@ channels = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
 
 
 
-%convert struct to array: easier to work on
+%convert struct to array: easier to work on...
 data_array1 = struct2array(data_resampled);
 
 %different frequency, we have to resample at same frequency
@@ -136,18 +136,17 @@ end
 
 
 %% --- CRANK ANGLE CALCULATION & SEGMENTATION ---
-%% --- RESET E SINCRONIZZAZIONE TOTALE ---
 
 % 1. Definiamo la lunghezza basandoci sull'EMG filtrato (quello che vuoi analizzare)
-N = size(data_f, 1); 
-fs_new = 2000; % La frequenza che hai scelto
+N = size(data_array, 1); 
+
 
 % 2. FORZIAMO il trigger ad avere la stessa lunghezza dell'EMG
 % Prendi il canale 17 dal data_array originale ma taglialo a N
 trigger_sync = data_array(1:N, 17); 
 
 % 3. Trova i picchi DIRETTAMENTE su questo trigger tagliato
-[~, stops] = findpeaks(trigger_sync, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_new*0.8);
+[~, stops] = findpeaks(trigger_sync, 'MinPeakHeight', 0.2, 'MinPeakDistance', fs_channels*1);
 
 % 4. Ricostruisci il CrankAngle partendo dai picchi APPENA TROVATI
 CrankAngle = nan(N, 1);
