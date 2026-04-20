@@ -31,8 +31,7 @@ data_array1 = struct2array(data_resampled);
 %different frequency, we have to resample at same frequency
 fs_emg = 2148.15; %channels (1-16)
 fs_trig = 2222.22; % channel (17)
-fs_target = 2000;  % Una frequenza comune a cui vogliamo portare tutto (es. 2000 Hz)
-
+fs_target = 2000;  % frequency target
 
 emg_raw = data_array1(:, 1:16);
 trig_raw = data_array1(:, 17);  
