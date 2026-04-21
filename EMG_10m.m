@@ -224,4 +224,36 @@ for n=1:12
        Med_freq(n,2) = medfreq( P_EMG(:,n) , F ); 
 end
 
+%% --- CALCOLO AREA MEDIA (iEMG) PER TUTTI I CANALI ---
 
+% 1. Scegli quali trigger usare (cambia tra heel_strikes e locs_trig a seconda del test)
+trig_attuali = locs_trig; % Metti locs_trig per il Trike, heel_strikes per il Cammino
+n_cicli = length(trig_attuali) - 1;
+
+% 2. Inizializza matrice per i risultati (Cicli x Canali)
+aree_cicli = zeros(n_cicli, 16);
+
+for c = 1:n_cicli
+    idx_in = trig_attuali(c);
+    idx_fi = trig_attuali(c+1);
+    
+    for ch = 1:16
+        % Prendiamo il segnale rettificato (valore assoluto)
+        seg_rect = abs(data_f(idx_in:idx_fi, ch));
+        
+        % Calcoliamo l'area con la regola dei trapezi e normalizziamo per la durata
+        % Questo ci dà l'attivazione media del muscolo in quel ciclo
+        aree_cicli(c, ch) = trapz(seg_rect) / length(seg_rect);
+    end
+end
+
+% 3. Calcoliamo la media finale per ogni muscolo
+area_finale = mean(aree_cicli, 1);
+
+% 4. Creazione Tabella Risultati
+tabella_risultati = table(channels(1:16)', area_finale', ...
+    'VariableNames', {'Muscolo', 'Area_Media_iEMG'});
+
+% Mostra la tabella nella Command Window
+disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
+disp(tabella_risultati);

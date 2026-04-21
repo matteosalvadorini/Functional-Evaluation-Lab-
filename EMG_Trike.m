@@ -203,13 +203,13 @@ linkaxes([ax1, ax2], 'x');
 AngBase=linspace(0,359,360);
 
 for n=1:17 %number of EMG channels
-    EMG_mat{n}.values=zeros(360,size(locs_emg,1)-1);
+    EMG_mat{n}.values=zeros(360,size(locs_trig,1)-1);
     EMG_matOK{n}.values=zeros(360,30);
     EMG_matOK_norm{n}.values=zeros(360,30);
 end
+locs_emg=locs_trig;
 
-
-for i = 1: size(locs_emg)-1
+for i = 1: size(locs_trig)-1
     
     t_orig = linspace(locs_emg(i)+1,locs_emg(i+1),locs_emg(i+1)-locs_emg(i));
     t_N = linspace(locs_emg(i)+1,locs_emg(i+1),360);
@@ -247,8 +247,8 @@ for i = 1:17
 end
 
 %% 8 - Identification of the first 30 pedaling cycles at target cadence +/- 4RPM
-
-time_CYCLE=CrankAngle_time(locs_angle);
+locs_angle=locs_trig;
+time_CYCLE=t(locs_angle);
 mean_cadence=60./diff(time_CYCLE); %mean cadence in RPM
 
 target_cadence=35;
@@ -399,3 +399,39 @@ for i = 1:16
 end
 
 sgtitle(['Analisi Pedalata FES-Trike - Ciclo n. ' num2str(n_ciclo) ' (0-360°)']);
+
+
+
+%% --- CALCOLO AREA MEDIA (iEMG) PER TUTTI I CANALI ---
+
+% 1. Scegli quali trigger usare (cambia tra heel_strikes e locs_trig a seconda del test)
+trig_attuali = locs_trig; % Metti locs_trig per il Trike, heel_strikes per il Cammino
+n_cicli = length(trig_attuali) - 1;
+
+% 2. Inizializza matrice per i risultati (Cicli x Canali)
+aree_cicli = zeros(n_cicli, 16);
+
+for c = 1:n_cicli
+    idx_in = trig_attuali(c);
+    idx_fi = trig_attuali(c+1);
+    
+    for ch = 1:16
+        % Prendiamo il segnale rettificato (valore assoluto)
+        seg_rect = abs(data_f(idx_in:idx_fi, ch));
+        
+        % Calcoliamo l'area con la regola dei trapezi e normalizziamo per la durata
+        % Questo ci dà l'attivazione media del muscolo in quel ciclo
+        aree_cicli(c, ch) = trapz(seg_rect) / length(seg_rect);
+    end
+end
+
+% 3. Calcoliamo la media finale per ogni muscolo
+area_finale = mean(aree_cicli, 1);
+
+% 4. Creazione Tabella Risultati
+tabella_risultati = table(channels(1:16)', area_finale', ...
+    'VariableNames', {'Muscolo', 'Area_Media_iEMG'});
+
+% Mostra la tabella nella Command Window
+disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
+disp(tabella_risultati);
