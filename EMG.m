@@ -347,3 +347,55 @@ fill([0:359, 359:-1:0], [emg_medio+emg_std, fliplr(emg_medio-emg_std)], 'b', 'Fa
 hold on; plot(0:359, emg_medio, 'b', 'LineWidth', 2);
 title(['Profilo Medio Muscolo ', num2str(muscolo_id)]);
 xlabel('Ciclo di Pedalata [gradi]'); ylabel('Ampiezza [mV]');
+
+
+
+%%
+
+%% --- PLOT DINAMICA MUSCOLARE TRIKE (SINGOLO CICLO) ---
+
+% 1. Parametri e controllo (usiamo i locs_trig del Trike)
+n_ciclo = 5; % Scegliamo un ciclo a metà prova (es. il quinto)
+if length(locs_trig) < n_ciclo + 1
+    error('Cicli insufficienti. Controlla il rilevamento dei trigger del Trike.');
+end
+
+% 2. Definizione indici
+idx_inizio_t = locs_trig(n_ciclo);
+idx_fine_t = locs_trig(n_ciclo + 1);
+
+% 3. Creazione Figura
+figure('Name', 'Analisi Muscolare Ciclo Trike', ...
+       'Units', 'normalized', 'Position', [0.05 0.05 0.9 0.85]);
+
+for i = 1:16
+    subplot(4, 4, i);
+    
+    % Estrazione segnale (dal file filtrato del trike)
+    segmento_raw = data_f(idx_inizio_t:idx_fine_t, i); 
+    
+    % Creiamo l'asse X in gradi (0-360) per questo segmento
+    gradi_ciclo = linspace(0, 360, length(segmento_raw));
+    
+    % Calcolo inviluppo per evidenziare il timing
+    segmento_env = envelope(abs(segmento_raw), 150, 'peak'); 
+    
+    % Plot
+    plot(gradi_ciclo, segmento_raw, 'Color', [0.7 0.7 0.7]); % Grigio
+    hold on;
+    plot(gradi_ciclo, segmento_env, 'b', 'LineWidth', 1.5);    % Blu per il Trike
+    
+    % Titolo canali
+    title(channels{i}, 'FontSize', 10);
+    
+    % Estetica specifica per il Trike
+    grid on;
+    xlim([0 360]);
+    xticks([0 90 180 270 360]);
+    axis tight;
+    
+    if mod(i, 4) ~= 1, yticks([]); end 
+    if i < 13, xticks([]); end
+end
+
+sgtitle(['Analisi Pedalata FES-Trike - Ciclo n. ' num2str(n_ciclo) ' (0-360°)']);
