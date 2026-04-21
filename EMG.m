@@ -166,29 +166,29 @@ end
 
 % 1. Trova gli indici dei picchi nel canale trigger (Colonna 17)
 % Usiamo la frequenza originale (es. 2222.22) se non hai ancora resampato
-[pks_trig, locs_trig] = findpeaks(data_array(:,17), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
+[pks_trig, locs_trig] = findpeaks(data_f(:,17), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
 
 % 2. Crea l'asse del tempo basato sulla lunghezza di data_array
-t_array = (0:size(data_array, 1)-1)' / fs_channels;
+t_array = (0:size(data_f, 1)-1)' / fs_channels;
 
 % 3. Grafico di confronto
 figure('Name', 'Sincronizzazione Canale 17 e Canale 7');
 
 % Subplot 1: Canale Trigger (17)
 ax1 = subplot(2,1,1);
-plot(t_array, data_array(:,17), 'Color', [0.4 0.4 0.4]); % Grigio
+plot(t_array, data_f(:,17), 'Color', [0.4 0.4 0.4]); % Grigio
 hold on;
-plot(t_array(locs_trig), data_array(locs_trig, 17), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
+plot(t_array(locs_trig), data_f(locs_trig, 17), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
 ylabel('Trigger [mV]');
 title('Canale 17 - Picchi identificati');
 grid on;
 
 % Subplot 2: Canale 7 (EMG Rectus Femoralis)
 ax2 = subplot(2,1,2);
-plot(t_array, data_array(:,6), 'b'); % Blu
+plot(t_array, data_f(:,6), 'b'); % Blu
 hold on;
 % USIAMO GLI STESSI IDENTICI INDICI (locs_trig)
-plot(t_array(locs_trig), data_array(locs_trig, 6), 'ro', 'MarkerFaceColor', 'r');
+plot(t_array(locs_trig), data_f(locs_trig, 6), 'ro', 'MarkerFaceColor', 'r');
 ylabel('EMG - Canale 7 [mV]');
 xlabel('Tempo [s]');
 title('Canale 7 - Punti di sincronizzazione');
@@ -315,3 +315,35 @@ for n=1:9
             ylabel('EMG - TA')
     end
 end
+
+
+
+%%
+
+
+
+% --- ESTRATTO DAL PUNTO A ---
+n_cicli = length(locs_trig) - 1;
+muscolo_id = 5; % Esempio: Rectus Femoralis
+matrice_cicli = zeros(n_cicli, 360);
+
+for i = 1:n_cicli
+    % Estrai il segmento
+    segmento = data_f(locs_trig(i):locs_trig(i+1), muscolo_id);
+    
+    % Normalizzazione temporale a 360 punti (Interpolazione)
+    x_orig = 1:length(segmento);
+    x_new = linspace(1, length(segmento), 360);
+    matrice_cicli(i, :) = interp1(x_orig, segmento, x_new);
+end
+
+% Calcolo Media e Deviazione Standard
+emg_medio = mean(matrice_cicli, 1);
+emg_std = std(matrice_cicli, 0, 1);
+
+% Plot
+figure;
+fill([0:359, 359:-1:0], [emg_medio+emg_std, fliplr(emg_medio-emg_std)], 'b', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+hold on; plot(0:359, emg_medio, 'b', 'LineWidth', 2);
+title(['Profilo Medio Muscolo ', num2str(muscolo_id)]);
+xlabel('Ciclo di Pedalata [gradi]'); ylabel('Ampiezza [mV]');
