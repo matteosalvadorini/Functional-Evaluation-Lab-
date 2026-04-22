@@ -435,3 +435,21 @@ tabella_risultati = table(channels(1:16)', area_finale', ...
 % Mostra la tabella nella Command Window
 disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
 disp(tabella_risultati);
+
+
+%%
+
+% --- CALCOLO SIMMETRIA MUSCOLARE ---
+
+area_R = mean(area_finale_gait(1:8));  % Media aree gamba destra
+area_L = mean(area_finale_gait(9:16)); % Media aree gamba sinistra
+
+% Indice di Simmetria (Symmetry Index)
+% Se > 100, la destra lavora più della sinistra
+% Se < 100, la sinistra lavora più della destra
+SI_muscolare = (area_R / area_L) * 100;
+
+fprintf('\n--- SIMMETRIA ---\n');
+fprintf('Area Media Destra (R): %.4f\n', area_R);
+fprintf('Area Media Sinistra (L): %.4f\n', area_L);
+fprintf('Indice di Simmetria Muscolare: %.2f%%\n', SI_muscolare);

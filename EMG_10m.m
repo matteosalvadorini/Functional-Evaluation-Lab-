@@ -165,3 +165,42 @@ tabella_gait = table(channels(1:16)', area_finale_gait', ...
 
 disp('--- TABELLA AREE MEDIE (GAIT) ---');
 disp(tabella_gait);
+
+
+%%
+
+% --- CALCOLO PARAMETRI SPAZIO-TEMPORALI ---
+
+distanza_test = 10; % metri
+tempo_inizio = virtual_heel_strikes(1) / fs_channels;
+tempo_fine = virtual_heel_strikes(end) / fs_channels;
+durata_totale = tempo_fine - tempo_inizio;
+
+% Velocità (m/s)
+velocita_ms = distanza_test / durata_totale;
+
+% Cadenza (passi al minuto)
+n_passi_totali = length(virtual_heel_strikes);
+cadenza = (n_passi_totali / durata_totale) * 60;
+
+fprintf('--- PARAMETRI CAMMINO ---\n');
+fprintf('Velocità Media: %.2f m/s\n', velocita_ms);
+fprintf('Cadenza: %.1f passi/min\n', cadenza);
+fprintf('Tempo totale stimato: %.2f s\n', durata_totale);
+
+%%
+
+% --- CALCOLO SIMMETRIA MUSCOLARE ---
+
+area_R = mean(area_finale_gait(1:8));  % Media aree gamba destra
+area_L = mean(area_finale_gait(9:16)); % Media aree gamba sinistra
+
+% Indice di Simmetria (Symmetry Index)
+% Se > 100, la destra lavora più della sinistra
+% Se < 100, la sinistra lavora più della destra
+SI_muscolare = (area_R / area_L) * 100;
+
+fprintf('\n--- SIMMETRIA ---\n');
+fprintf('Area Media Destra (R): %.4f\n', area_R);
+fprintf('Area Media Sinistra (L): %.4f\n', area_L);
+fprintf('Indice di Simmetria Muscolare: %.2f%%\n', SI_muscolare);
