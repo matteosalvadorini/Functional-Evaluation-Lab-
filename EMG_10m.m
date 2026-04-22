@@ -24,42 +24,16 @@ channels = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
            'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L', 'Trigger'};
 
 
+ 
 
-%convert struct to array: easier to work on...
-data_array1 = struct2array(data_resampled);
-
-%different frequency, we have to resample at same frequency
-fs_emg = 2148.15; %channels (1-16)
-fs_trig = 2222.22; % channel (17)
-fs_target = 2000;  % frequency target
-
-emg_raw = data_array1(:, 2:17);
-trig_raw = data_array1(:, 1);  
-
-% Resampling channels 1-16 muscles
-emg_resampled = resample(emg_raw, fs_target, round(fs_emg));
-
-% Resampling channel 17 trigger
-trig_resampled = resample(trig_raw, fs_target, round(fs_trig));
-
-% find min length betweend the 2 signals resampled
-min_len = min(size(emg_resampled, 1), length(trig_resampled));
-
-% Taglia entrambi alla stessa lunghezza
-emg_final = emg_resampled(1:min_len, :);
-trig_final = trig_resampled(1:min_len);
-
-% Ora puoi riunirli in un'unica matrice "pulita"
-data_array = [emg_final, trig_final]; 
-fs_channels = fs_target; % Da qui in poi userai sempre 2000 Hz
-
+data = table2array(data);
 
 %% PLOT RAW DATA
 
 
-
+fs_channels= 2222.22;
 %calculate time for one channel, will be the same length for the others
-n_sample = size(data_array, 1);
+n_sample = size(data, 1);
 t = (0:n_sample-1) / fs_channels;
 t=t';
 
@@ -79,7 +53,7 @@ for i = 1:17
 
 
     nexttile;
-    plot(data_array(:,i));
+    plot(data(:,i));
     title(channels{i}, 'Interpreter', 'none');
 end
 
@@ -95,7 +69,7 @@ Wn = W/(fs_channels/2); %normalized frequency
 
 
 %cancel NaN values: every NaN values = 0 with:
-data_isnan=fillmissing(data_array, 'constant', 0);
+data_isnan=fillmissing(data, 'constant', 0);
 %filter for every channel
 data_f= filtfilt(b,a,data_isnan);
 
@@ -131,129 +105,63 @@ end
 
 
 
-%%
 
+%% --- ANALISI COMPLETA GAIT (SENZA TRIGGER FISICO-sfruttando tibiale anteriore) ---
 
+% 1. CREAZIONE TRIGGER VIRTUALE (Basato su Tibialis Ant R - Canale 1)
+% Usiamo il Tibiale perché ha burst molto chiari all'inizio del passo
+ta_ref = abs(data_f(:, 1)); 
+[b_trig, a_trig] = butter(4, 3/(fs_channels/2), 'low'); % Filtro molto dolce
+ta_smooth = filtfilt(b_trig, a_trig, ta_ref);
 
+% Trova i picchi (Heel Strikes stimati)
+% Regola 'MinPeakHeight' se non trova nulla (es. 0.01 o 0.05)
+[~, virtual_heel_strikes] = findpeaks(ta_smooth, 'MinPeakHeight', 0.004, 'MinPeakDistance', fs_channels*0.5);
 
-trigger_gait = data_f(:, 17);
+fprintf('Passi individuati tramite Tibiale: %d\n', length(virtual_heel_strikes));
 
-% Usiamo una soglia e una distanza minima (MinPeakDistance)
-% Se fs è 2000Hz, 1 secondo = 2000 campioni. Un passo è circa 0.8-1.2s.
-[~, heel_strikes] = findpeaks(abs(trigger_gait), 'MinPeakHeight', 0.05, 'MinPeakDistance', fs_channels*0.5);
+% 2. CALCOLO AREA MEDIA (iEMG) SU TUTTI I PASSI
+n_passi = length(virtual_heel_strikes) - 1;
+aree_passi = zeros(n_passi, 16);
 
-
-% Esegui l'inviluppo (RMS o Rectify + Low Pass) sull'EMG prima di tagliare!
-emg_rect = abs(data_f(:, 7)); 
-[b, a] = butter(4, 6/(fs_channels/2), 'low'); % Filtro passa-basso a 6Hz per l'inviluppo
-emg_env = filtfilt(b, a, emg_rect);
-
-% Taglia e normalizza
-for i = 1:length(heel_strikes)-1
-    segmento = emg_env(heel_strikes(i):heel_strikes(i+1));
-    % Normalizziamo a 101 punti (da 0% a 100% del passo)
-    passi_matrice(i, :) = interp1(1:length(segmento), segmento, linspace(1, length(segmento), 101));
-end
-
-
-%% --- PLOT DINAMICA MUSCOLARE (SINGOLO PASSO) ---
-
-% 1. Parametri e controllo
-n_passo = 2; % Scegliamo il secondo passo
-if length(heel_strikes) < n_passo + 1
-    error('Passi insufficienti per il plot. Controlla il rilevamento degli heel strikes.');
-end
-
-% 2. Definizione indici temporali
-idx_inizio = heel_strikes(n_passo);
-idx_fine = heel_strikes(n_passo + 1);
-t_passo = (0:(idx_fine - idx_inizio)) / fs_channels; 
-
-% 3. Creazione Figura
-figure('Name', 'Analisi Muscolare Passo Singolo (10m Walk)', ...
-       'Units', 'normalized', 'Position', [0.05 0.05 0.9 0.85]);
-
-for i = 1:16
-    subplot(4, 4, i);
-    
-    % Estrazione segnale filtrato (inviluppo consigliato per vedere l'attivazione)
-    segmento_raw = data_f(idx_inizio:idx_fine, i); 
-    
-    % Calcolo inviluppo al volo per pulizia visiva
-    segmento_env = envelope(abs(segmento_raw), 150, 'peak'); 
-    
-    % Plot
-    plot(t_passo, segmento_raw, 'Color', [0.7 0.7 0.7]); % EMG grezzo in grigio
-    hold on;
-    plot(t_passo, segmento_env, 'r', 'LineWidth', 1.5);    % Inviluppo in rosso
-    
-    % Titolo usando i tuoi nomi
-    title(channels{i}, 'FontSize', 10);
-    
-    % Estetica
-    grid on;
-    axis tight;
-    if mod(i, 4) ~= 1, yticks([]); end % Toglie etichette Y centrali
-    if i < 13, xticks([]); end         % Toglie etichette X superiori
-end
-
-sgtitle(['Analisi Ciclo del Passo - Muscoli Gamba R e L (Passo ' num2str(n_passo) ')']);%% 4 - Power spectral density estimate & extraction of spectral parameters
-
-%%
-
-
-[P_EMG,F] = periodogram(data_array, rectwin(max(size(data_array))),512,fs_channels); 
-
-% plot of the power spectral density estimate of the right RF
-figure ()
-subplot(2,1,1)
-plot(F,10*log10(P_EMG(:,7)),'b')
-title('Periodogram Power Spectral Density Estimate','b')
-xlabel('Frequency (Hz)')
-ylabel('Power/frequency (dB/Hz)')
-grid on
-ylim([ -120 0])
-xlim([0 fs_channels/2])
-
-%estimates the mean frequency & median frequency
-for n=1:12
-       Mean_freq(n,1)=meanfreq( data_array(:,n) , fs_channels );
-       Mean_freq(n,2) = meanfreq( P_EMG(:,n) , F ); 
-
-       Med_freq(n,1) = medfreq( data_array(:,n) , fs_channels );
-       Med_freq(n,2) = medfreq( P_EMG(:,n) , F ); 
-end
-
-%% --- CALCOLO AREA MEDIA (iEMG) PER TUTTI I CANALI ---
-
-% 1. Scegli quali trigger usare (cambia tra heel_strikes e locs_trig a seconda del test)
-trig_attuali = locs_trig; % Metti locs_trig per il Trike, heel_strikes per il Cammino
-n_cicli = length(trig_attuali) - 1;
-
-% 2. Inizializza matrice per i risultati (Cicli x Canali)
-aree_cicli = zeros(n_cicli, 16);
-
-for c = 1:n_cicli
-    idx_in = trig_attuali(c);
-    idx_fi = trig_attuali(c+1);
+for p = 1:n_passi
+    idx_in = virtual_heel_strikes(p);
+    idx_fi = virtual_heel_strikes(p+1);
     
     for ch = 1:16
-        % Prendiamo il segnale rettificato (valore assoluto)
         seg_rect = abs(data_f(idx_in:idx_fi, ch));
-        
-        % Calcoliamo l'area con la regola dei trapezi e normalizziamo per la durata
-        % Questo ci dà l'attivazione media del muscolo in quel ciclo
-        aree_cicli(c, ch) = trapz(seg_rect) / length(seg_rect);
+        % Area normalizzata per la durata del passo
+        aree_passi(p, ch) = trapz(seg_rect) / length(seg_rect);
     end
 end
 
-% 3. Calcoliamo la media finale per ogni muscolo
-area_finale = mean(aree_cicli, 1);
+area_finale_gait = mean(aree_passi, 1);
 
-% 4. Creazione Tabella Risultati
-tabella_risultati = table(channels(1:16)', area_finale', ...
+% 3. PLOT MULTI-CANALE (Visualizziamo il secondo passo individuato)
+n_p = 2; 
+idx_in_p = virtual_heel_strikes(n_p);
+idx_fi_p = virtual_heel_strikes(n_p+1);
+t_p = (0:(idx_fi_p - idx_in_p)) / fs_channels;
+
+figure('Name', 'Analisi Muscolare Gait (Trigger Virtuale TA)', 'Units', 'normalized', 'Position', [0.05 0.05 0.9 0.85]);
+
+for i = 1:16
+    subplot(4, 4, i);
+    segmento_raw = data_f(idx_in_p:idx_fi_p, i);
+    segmento_env = envelope(abs(segmento_raw), 150, 'peak');
+    
+    plot(t_p, segmento_raw, 'Color', [0.7 0.7 0.7]); hold on;
+    plot(t_p, segmento_env, 'r', 'LineWidth', 1.2);
+    
+    title(channels{i}); grid on; axis tight;
+    if mod(i, 4) ~= 1, yticks([]); end
+    if i < 13, xticks([]); end
+end
+sgtitle(['Gait Cycle - Passo ' num2str(n_p) ' (Distanza tra picchi TA)']);
+
+% 4. VISUALIZZAZIONE TABELLA RISULTATI
+tabella_gait = table(channels(1:16)', area_finale_gait', ...
     'VariableNames', {'Muscolo', 'Area_Media_iEMG'});
 
-% Mostra la tabella nella Command Window
-disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
-disp(tabella_risultati);
+disp('--- TABELLA AREE MEDIE (GAIT) ---');
+disp(tabella_gait);
