@@ -110,11 +110,11 @@ right_G_thigh_phi_x_filtered = right_G_thigh_phi_x_filtered - 10;
 CurrentPhase_left = -1;
 ThresholdFootSpeed_left = 0;
 AdditionalSpeed_left = 10;
-AngleLimit_left = 10;
-SpeedLimitMax_left = 100;
-SpeedLimitMin_left = -105;
-SpeedLimitMin2_left = -15;
-
+% Sinistra (Left)
+AngleLimit_left = -2;      % Quasi zero, per sentire ogni minimo movimento
+SpeedLimitMax_left = 15;   % Molto bassa (molto sensibile)
+SpeedLimitMin_left = -15;  % Molto bassa
+SpeedLimitMin2_left = -2;  % Trigger quasi istantaneo
 % Usiamo la lunghezza del vettore caviglia che abbiamo creato prima
 State_left = zeros(size(left_Ankle_angle_phi_x));
 
@@ -183,10 +183,11 @@ end
 CurrentPhase_right = -1;
 ThresholdFootSpeed_right = 0;
 AdditionalSpeed_right = 10;
-AngleLimit_right = 10;
-SpeedLimitMax_right = 100;
-SpeedLimitMin_right = -105;
-SpeedLimitMin2_right = -15;
+% Destra (Right)
+AngleLimit_right = -2; 
+SpeedLimitMax_right = 15;
+SpeedLimitMin_right = -15;
+SpeedLimitMin2_right = -2;
 
 % Usiamo la lunghezza del vettore caviglia destra creato dai dati Captiks
 State_right = zeros(size(right_Ankle_angle_phi_x));
