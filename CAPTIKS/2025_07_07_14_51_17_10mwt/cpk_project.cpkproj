@@ -1,0 +1,28 @@
+<CpkProject>
+ <DeviceGroup/>
+ <VideoGroup/>
+ <marker file_name="cpk_marker.csv"/>
+ <BvhGroup>
+  <bvh fileName="cpk_BaseActor_2025_07_07_14_51_17.bvh" offset="0"/>
+ </BvhGroup>
+ <BoneMapGroup>
+  <Map actor_name="BaseActor" calib_file_name="cpk_BaseActor.calib.csv">
+   <bone dev_id="1303213084651630664" name="LeftUpLeg"/>
+   <bone dev_id="11326629574748221512" name="LeftLeg"/>
+   <bone dev_id="12314659747194024008" name="Spine2"/>
+   <bone dev_id="12368997865241784392" name="LeftFoot"/>
+   <bone dev_id="1570031244946518088" name="RightLeg"/>
+   <bone dev_id="7492292169714970696" name="RightFoot"/>
+   <bone dev_id="8789501940989767752" name="RightUpLeg"/>
+   <bone dev_id="17356508477145296968" name="Hips"/>
+  </Map>
+ </BoneMapGroup>
+ <AngleGroup>
+  <angle fileName="cpk_anatomical_angles_2025_07_07_14_51_17.csv"/>
+ </AngleGroup>
+ <ShoulderStateGroup/>
+ <TriggerList>
+  <Trigger event="1" event_time="3048"/>
+  <Trigger event="2" event_time="20822"/>
+ </TriggerList>
+</CpkProject>
