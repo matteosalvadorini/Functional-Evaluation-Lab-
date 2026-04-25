@@ -347,7 +347,36 @@ title('Right: Dorsi/Planti');
 
 
 
+%% --FORCES--
 
+figure('Name', 'Analisi delle Forze di Reazione al Suolo (GRF)');
+
+% --- FORZA VERTICALE (Il classico grafico a "M") ---
+subplot(3,2,1); hold on; grid on;
+plot(forces.fRGRVEM, 'b', 'LineWidth', 2);
+title('Vertical GRF - RIGHT'); ylabel('% Weight');
+
+subplot(3,2,2); hold on; grid on;
+plot(forces.fLGRVEM, 'b', 'LineWidth', 2);
+title('Vertical GRF - LEFT');
+
+% --- FORZA ANTERO-POSTERIORE (Frenata e Spinta) ---
+subplot(3,2,3); hold on; grid on;
+plot(forces.fRGRAPM, 'g', 'LineWidth', 2);
+title('Antero-Posterior GRF - RIGHT'); ylabel('% Weight');
+
+subplot(3,2,4); hold on; grid on;
+plot(forces.fLGRAPM, 'g', 'LineWidth', 2);
+title('Antero-Posterior GRF - LEFT');
+
+% --- FORZA MEDIO-LATERALE (Stabilità laterale) ---
+subplot(3,2,5); hold on; grid on;
+plot(forces.fRGRMLM, 'm', 'LineWidth', 2);
+title('Medio-Lateral GRF - RIGHT'); xlabel('% Ciclo'); ylabel('% Weight');
+
+subplot(3,2,6); hold on; grid on;
+plot(forces.fLGRMLM, 'm', 'LineWidth', 2);
+title('Medio-Lateral GRF - LEFT'); xlabel('% Ciclo');
 
 
 
