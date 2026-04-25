@@ -21,12 +21,12 @@ if ~isempty(missing)
 end
 
 % ── Save into struct ───────────────────────────────────────────────────────────
-data.cadence        = T.cadence;
-data.angle          = T.angle;
-data.linearVelocity = T.linearVelocity;
-data.powerLeft      = T.powerLeft;
-data.powerRight     = T.powerRight;
-data.totalDistance  = T.totalDistance;
+datatrike.cadence        = T.cadence;
+datatrike.angle          = T.angle;
+datatrike.linearVelocity = T.linearVelocity;
+datatrike.powerLeft      = T.powerLeft;
+datatrike.powerRight     = T.powerRight;
+datatrike.totalDistance  = T.totalDistance;
 
 fprintf('✅ Loaded %d rows from: %s\n', height(T), fullPath);
 clear T
