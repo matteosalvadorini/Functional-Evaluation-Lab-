@@ -1,4 +1,7 @@
-%% --- ANALISI ANCA (HIP) ---
+%% --ANGLES--
+
+
+% --- ANALISI ANCA (HIP) ---
 figure('Name', 'Analisi Cinematica: ANCA');
 
 % Left Flessione/Estensione
@@ -37,7 +40,7 @@ plot(angles.aRHPAAM, 'g', 'LineWidth', 1.5);
 plot(normAngles.AbdaddAncaDxM, 'k--', 'LineWidth', 1.5);
 title('Right: hip add-abduction');
 
-%% --- FIGURA: BACINO (PELVIS) ---
+% --- FIGURA: BACINO (PELVIS) ---
 figure('Name', 'Confronto Cinematica: BACINO');
 
 % TILT (Sagittale)
@@ -74,7 +77,7 @@ plot(normAngles.RotazionePelvicaSxM, 'r--', 'LineWidth', 1.5);
 title('Left Pelvis Rotation'); xlabel('% Ciclo');
 
 
-%% --- FIGURA: TRONCO (TRUNK) ---
+% --- FIGURA: TRONCO (TRUNK) ---
 figure('Name', 'Confronto Cinematica: TRONCO');
 
 % Flessione/Estensione
@@ -112,7 +115,7 @@ plot(normAngles.RotazioneSpallaSxM, 'r--', 'LineWidth', 1.5);
 title('Left Trunk Rotation');
 
 
-%% --- ANALISI GINOCCHIO (KNEE) ---
+% --- ANALISI GINOCCHIO (KNEE) ---
 figure('Name', 'Analisi Cinematica: GINOCCHIO');
 
 % Left Flessione/Estensione
@@ -152,7 +155,7 @@ plot(normAngles.VarvalgGinocchioDxM, 'k--', 'LineWidth', 1.5);
 title('Right: add-abduction');
 
 
-%% --- ANALISI CAVIGLIA (ANKLE) ---
+% --- ANALISI CAVIGLIA (ANKLE) ---
 figure('Name', 'Analisi Cinematica: CAVIGLIA');
 
 % Left Dorsi/Planti
@@ -178,3 +181,177 @@ subplot(2,2,4); hold on; grid on;
 plot(angles.aRAIEM, 'g', 'LineWidth', 1.5);
 plot(normAngles.ProgressionePiedeDxM, 'k--', 'LineWidth', 1.5);
 title('Right: internal external rotation');
+
+
+
+
+
+
+%% --POWERS--
+
+figure('Name', 'Confronto POTENZE: Paziente vs Norma');
+
+% --- POTENZA ANCA SX ---
+subplot(3,2,1); hold on; grid on;
+plot(powers.pLHPFEM, 'b', 'LineWidth', 2); % Paziente
+plot(normPowers.PotenzaAncaSxM, 'r--', 'LineWidth', 2); % Norma
+title('Potenza Anca Sx'); ylabel('W/kg');
+
+% --- POTENZA ANCA DX ---
+subplot(3,2,2); hold on; grid on;
+plot(powers.pRHPFEM, 'b', 'LineWidth', 2); % Paziente
+plot(normPowers.PotenzaAncaDxM, 'r--', 'LineWidth', 2); % Norma
+title('Potenza Anca Dx'); ylabel('W/kg');
+
+
+% --- POTENZA GINOCCHIO SX ---
+subplot(3,2,3); hold on; grid on;
+plot(powers.pLKFEM, 'b', 'LineWidth', 2);
+plot(normPowers.PotenzaGinocchioSxM, 'r--', 'LineWidth', 2);
+title('Potenza Ginocchio SX'); ylabel('W/kg');
+
+% --- POTENZA GINOCCHIO DX ---
+subplot(3,2,4); hold on; grid on;
+plot(powers.pRKFEM, 'b', 'LineWidth', 2);
+plot(normPowers.PotenzaGinocchioDxM, 'r--', 'LineWidth', 2);
+title('Potenza Ginocchio DX'); ylabel('W/kg');
+
+
+% --- POTENZA CAVIGLIA SX ---
+subplot(3,2,5); hold on; grid on;
+plot(powers.pLAFEM, 'b', 'LineWidth', 2);
+plot(normPowers.PotenzaCavigliaSxM, 'r--', 'LineWidth', 2);
+title('Potenza Caviglia SX'); xlabel('% Ciclo'); ylabel('W/kg');
+
+% --- POTENZA CAVIGLIA DX ---
+subplot(3,2,6); hold on; grid on;
+plot(powers.pRAFEM, 'b', 'LineWidth', 2);
+plot(normPowers.PotenzaCavigliaDxM, 'r--', 'LineWidth', 2);
+title('Potenza Caviglia DX'); xlabel('% Ciclo'); ylabel('W/kg');
+
+
+
+
+
+
+
+
+%% --MOMENTS--
+
+
+% --- ANALISI ANCA (HIP) ---
+figure('Name', 'Analisi Cinematica: ANCA');
+
+% --- ANCA SX (Flessione/Estensione) ---
+subplot(3,2,1); hold on; grid on;
+plot(moments.tLHPFEM, 'b', 'LineWidth', 2);
+plot(normMoments.MomentoFlessestAncaSxM, 'r--', 'LineWidth', 2);
+title('Momento Anca SX (Fless/Est)');
+
+% --- ANCA DESTRA (Flessione/Estensione) ---
+subplot(3,2,2); hold on; grid on;
+plot(moments.tRHPFEM, 'b', 'LineWidth', 2);
+plot(normMoments.MomentoFlessestAncaDxM, 'r--', 'LineWidth', 2);
+title('Momento Anca DX (Fless/Est)');
+
+% Left Intra/Extra
+subplot(3,2,3); hold on; grid on;
+plot(moments.tRHPIEM, 'g', 'LineWidth', 1.5); % Nota: verifica se il nome è aLHPIES
+plot(normMoments.MomentoIntrextrAncaSxM, 'k--', 'LineWidth', 1.5);
+title('Left: Intra/Extra Rot'); ylabel('Gradi (°)');
+
+% Right Intra/Extra
+subplot(3,2,4); hold on; grid on;
+plot(moments.tLHPIEM, 'g', 'LineWidth', 1.5);
+plot(normMoments.MomentoIntrextrAncaDxM, 'k--', 'LineWidth', 1.5);
+title('Right: Intra/Extra Rot');
+
+% --- ANCA SX (Abduzione/Adduzione) ---
+subplot(3,2,5); hold on; grid on;
+plot(moments.tLHPAAM, 'g', 'LineWidth', 2);
+plot(normMoments.MomentoAbdaddAncaSxM, 'k--', 'LineWidth', 2);
+title('Momento Anca SX (Abd/Add)');
+
+% --- ANCA DESTRA (Abduzione/Adduzione) ---
+subplot(3,2,6); hold on; grid on;
+plot(moments.tRHPAAM, 'g', 'LineWidth', 2);
+plot(normMoments.MomentoAbdaddAncaDxM, 'k--', 'LineWidth', 2);
+title('Momento Anca DX (Abd/Add)');
+
+
+
+
+% --- ANALISI GINOCCHIO (KNEE) ---
+figure('Name', 'Analisi Cinematica: GINOCCHIO');
+
+% --- GINOCCHIO SX (Flessione/Estensione) ---
+subplot(3,2,1); hold on; grid on;
+% Usiamo la colonna del paziente (assicurati che il nome sia tRKFE_M o tRKFE_M)
+plot(moments.tLKFEM, 'b', 'LineWidth', 2); 
+plot(normMoments.MomentoFlessestGinocchioSxM, 'r--', 'LineWidth', 2);
+title('Momento Ginocchio SX (Fless/Est)');
+ylabel('Nm/kg');
+
+% --- GINOCCHIO DESTRO (Flessione/Estensione) ---
+subplot(3,2,2); hold on; grid on;
+% Usiamo la colonna del paziente (assicurati che il nome sia tRKFE_M o tRKFE_M)
+plot(moments.tRKFEM, 'b', 'LineWidth', 2); 
+plot(normMoments.MomentoFlessestGinocchioDxM, 'r--', 'LineWidth', 2);
+title('Momento Ginocchio DX (Fless/Est)');
+ylabel('Nm/kg');
+
+% Left Intra/Extra
+subplot(3,2,3); hold on; grid on;
+plot(moments.tLKIEM, 'g', 'LineWidth', 1.5);
+plot(normMoments.MomentoIntrextrGinocchioSxM, 'k--', 'LineWidth', 1.5);
+title('Left: Intra/Extra Rot'); ylabel('Gradi (°)');
+
+% Right Intra/Extra
+subplot(3,2,4); hold on; grid on;
+plot(moments.tRKIEM, 'g', 'LineWidth', 1.5);
+plot(normMoments.MomentoIntrextrGinocchioDxM, 'k--', 'LineWidth', 1.5);
+title('Right: Intra/Extra Rot');
+
+% --- GINOCCHIO SX (Varo/Valgo - Add/Abd) ---
+subplot(3,2,5); hold on; grid on;
+plot(moments.tLKAAM, 'g', 'LineWidth', 2);
+plot(normMoments.MomentoVarvalgGinocchioSxM, 'k--', 'LineWidth', 2);
+title('Momento Ginocchio SX (Var/Valg)');
+ylabel('Nm/kg');
+
+% --- GINOCCHIO DESTRO (Varo/Valgo - Add/Abd) ---
+subplot(3,2,6); hold on; grid on;
+plot(moments.tRKAAM, 'g', 'LineWidth', 2);
+plot(normMoments.MomentoVarvalgGinocchioDxM, 'k--', 'LineWidth', 2);
+title('Momento Ginocchio DX (Var/Valg)');
+ylabel('Nm/kg');
+
+
+
+% --- ANALISI CAVIGLIA (ANKLE) ---
+figure('Name', 'Analisi Cinematica: CAVIGLIA');
+
+% Left Dorsi/Planti
+subplot(2,2,1); hold on; grid on;
+plot(moments.tLAFEM, 'b', 'LineWidth', 1.5);
+plot(normMoments.MomentoDorsplantCavigliaSxM, 'r--', 'LineWidth', 1.5);
+title('Left: Dorsi/Planti'); ylabel('Gradi (°)');
+
+% Right Dorsi/Planti
+subplot(2,2,2); hold on; grid on;
+plot(moments.tRAFEM, 'b', 'LineWidth', 1.5);
+plot(normMoments.MomentoDorsplantCavigliaDxM, 'r--', 'LineWidth', 1.5);
+title('Right: Dorsi/Planti');
+
+
+
+
+
+
+
+
+
+
+
+
+
