@@ -142,19 +142,19 @@ end
 
 % 1. Trova gli indici dei picchi nel canale trigger (Colonna 17)
 % Usiamo la frequenza originale (es. 2222.22) se non hai ancora resampato
-[pks_trig, locs_trig] = findpeaks(data_f(:,1), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
+[pks_trig, locs_trig] = findpeaks(data_array(:,1), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
 
 % 2. Crea l'asse del tempo basato sulla lunghezza di data_array
-t_array = (0:size(data_f, 1)-1)' / target;
+t_array = (0:size(data_array, 1)-1)' / target;
 
 % 3. Grafico di confronto
 figure('Name', 'Sincronizzazione Trigger e Canale 7');
 
 % Subplot 1: Canale Trigger (1)
 ax1 = subplot(2,1,1);
-plot(t_array, data_f(:,1), 'Color', [0.4 0.4 0.4]); % Grigio
+plot(t_array, data_array(:,1), 'Color', [0.4 0.4 0.4]); % Grigio
 hold on;
-plot(t_array(locs_trig), data_f(locs_trig, 1), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
+plot(t_array(locs_trig), data_array(locs_trig, 1), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
 ylabel('Trigger [mV]');
 title('Canale 17 - Picchi identificati');
 grid on;
@@ -224,13 +224,13 @@ end
 
 
 
-%% 8 - Identification of the first 30 pedaling cycles at target cadence +/- 4RPM
+%% 8 - Identification good cycles at target cadence +/- 4RPM
 locs_angle=locs_trig;
 time_CYCLE=t(locs_angle);
 mean_cadence=60./diff(time_CYCLE); %mean cadence in RPM
 
 target_cadence=35;
-good_cycle=find(and(mean_cadence<=target_cadence+4, mean_cadence>=target_cadence-4),30);
+good_cycle=find(and(mean_cadence<=target_cadence+4, mean_cadence>=target_cadence-4));
 
 
 figure
@@ -443,6 +443,83 @@ disp(tabella_risultati);
 %%
 
 % --- CALCOLO SIMMETRIA MUSCOLARE ---
+
+
+
+
+%% Amplitude normalization through median peak activation across valid cycles
+% For each muscle, the peak envelope value is extracted from each valid cycle. 
+% The median of these peak values is then used as a normalization factor, 
+% and each cycle is divided by the corresponding muscle-specific median 
+% peak value.
+
+n_valid = min(30, length(good_cycles));
+
+norm_value = zeros(1,16);
+
+for m = 1:16
+    peaks = zeros(n_valid,1);
+    
+    for i = 1:n_valid
+        peaks(i) = max(EMG_cycles_norm{good_cycles(i)}(:,m));
+    end
+    
+    norm_value(m) = median(peaks);
+end
+
+EMG_cycles_norm_amp = cell(n_valid,1);
+
+for i = 1:n_valid
+    EMG_cycles_norm_amp{i} = zeros(360,16);
+    for m = 1:16
+        EMG_cycles_norm_amp{i}(:,m) = EMG_cycles_norm{good_cycles(i)}(:,m) / norm_value(m);
+    end
+end
+
+
+% Total activation level for each muscle
+% For each normalized cycle and each muscle, the area under the curve (AUC)
+% of the EMG envelope is computed. This represents the total activation 
+% level of that muscle over the full pedaling cycle.
+
+n_cicli = length(EMG_cycles_norm_amp);
+n_muscoli = 16;
+
+AUC = zeros(n_cicli, n_muscoli);
+ang = linspace(0,360,360);
+
+for i = 1:n_cicli
+    for m = 1:n_muscoli
+        AUC(i,m) = trapz(ang, EMG_cycles_norm_amp{i}(:,m));
+    end
+end
+
+% Simmetry index computation for each muscle
+% For each pair of homologous right–left muscles, a symmetry index (SI) is 
+% calculated using the AUC values. This provides a quantitative estimate of
+% how balanced the activation is between the two sides.
+
+SI = zeros(n_cicli,8);
+
+for k = 1:8
+    R = AUC(:,k);
+    L = AUC(:,k+8);
+
+    SI(:,k) = ((R - L) ./ (0.5*(R + L))) * 100;
+end
+
+SI_abs = abs(SI);
+SI_mean = mean(SI,1);
+SI_abs_mean = mean(SI_abs,1);
+
+% Results
+% The mean SI and mean absolute SI are calculated across cycles for each 
+% muscle pair and displayed in a summary table, providing an overview of 
+% inter-limb symmetry during pedaling.
+
+muscle_names = {'TA','GastroLat','Soleus','GastroMed','Rectus','VastusLat','VastusMed','Semitend'};
+disp(table(muscle_names', SI_mean', SI_abs_mean', ...
+    'VariableNames', {'Muscle','SI_mean','SI_abs_mean'}))
 
 area_R = mean(area_finale(1:8));  % Media aree gamba destra
 area_L = mean(area_finale(9:16)); % Media aree gamba sinistra
