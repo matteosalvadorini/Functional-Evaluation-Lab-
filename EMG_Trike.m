@@ -18,40 +18,16 @@
 % 15. Vastus Med L 
 % 16. Semitendinous L 
 
-channels = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
+channels = {'Trigger','Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
            'Rectus R', 'Vastus Lat R', 'Vastus Med R', 'Semitendinous R', ...
            'Tibialis Ant L', 'Gastro Lat L', 'Soleus L', 'Gastro Med L', ...
-           'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L', 'Trigger'};
+           'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L'};
 
 
 
 %convert struct to array: easier to work on...
-data_array1 = struct2array(data_resampled);
+data_array = struct2array(data_resampled);
 
-%different frequency, we have to resample at same frequency
-fs_emg = 2148.15; %channels (1-16)
-fs_trig = 2222.22; % channel (17)
-fs_target = 2000;  % frequency target
-
-emg_raw = data_array1(:, 2:17);
-trig_raw = data_array1(:, 1);  
-
-% Resampling channels 1-16 muscles
-emg_resampled = resample(emg_raw, fs_target, round(fs_emg));
-
-% Resampling channel 17 trigger
-trig_resampled = resample(trig_raw, fs_target, round(fs_trig));
-
-% find min length betweend the 2 signals resampled
-min_len = min(size(emg_resampled, 1), length(trig_resampled));
-
-% Taglia entrambi alla stessa lunghezza
-emg_final = emg_resampled(1:min_len, :);
-trig_final = trig_resampled(1:min_len);
-
-% Ora puoi riunirli in un'unica matrice "pulita"
-data_array = [emg_final, trig_final]; 
-fs_channels = fs_target; % Da qui in poi userai sempre 2000 Hz
 
 
 %% PLOT RAW DATA
@@ -60,7 +36,7 @@ fs_channels = fs_target; % Da qui in poi userai sempre 2000 Hz
 
 %calculate time for one channel, will be the same length for the others
 n_sample = size(data_array, 1);
-t = (0:n_sample-1) / fs_channels;
+t = (0:n_sample-1) / target;
 t=t';
 
 page=6;
@@ -89,7 +65,7 @@ end
 % Band-pass filter 5th order
 % cut off frequency = [20-400] Hz 
 W= [20; 400];
-Wn = W/(fs_channels/2); %normalized frequency
+Wn = W/(target/2); %normalized frequency
 [b,a ]= butter(5,Wn,"bandpass");
 
 
@@ -103,7 +79,7 @@ data_f= filtfilt(b,a,data_isnan);
 
 %calculate AGAIN (gives problem with dimension) time for one channel, will be the same length for the others
 n_sample = size(data_f, 1);
-t_f = (0:n_sample-1) / fs_channels;
+t_f = (0:n_sample-1) / target;
 t_f=t_f';
 
 
@@ -137,7 +113,7 @@ end
 %% 4 - Power spectral density estimate & extraction of spectral parameters
 
 
-[P_EMG,F] = periodogram(data_array, rectwin(max(size(data_array))),512,fs_channels); 
+[P_EMG,F] = periodogram(data_f, rectwin(max(size(data_f))),512,fs_channels); 
 
 % plot of the power spectral density estimate of the right RF
 figure ()
@@ -151,11 +127,11 @@ ylim([ -120 0])
 xlim([0 fs_channels/2])
 
 %estimates the mean frequency & median frequency
-for n=1:12
-       Mean_freq(n,1)=meanfreq( data_array(:,n) , fs_channels );
+for n=2:17
+       Mean_freq(n,1)=meanfreq( data_f(:,n) , fs_channels );
        Mean_freq(n,2) = meanfreq( P_EMG(:,n) , F ); 
 
-       Med_freq(n,1) = medfreq( data_array(:,n) , fs_channels );
+       Med_freq(n,1) = medfreq( data_f(:,n) , fs_channels );
        Med_freq(n,2) = medfreq( P_EMG(:,n) , F ); 
 end
 
@@ -166,29 +142,29 @@ end
 
 % 1. Trova gli indici dei picchi nel canale trigger (Colonna 17)
 % Usiamo la frequenza originale (es. 2222.22) se non hai ancora resampato
-[pks_trig, locs_trig] = findpeaks(data_f(:,17), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
+[pks_trig, locs_trig] = findpeaks(data_f(:,1), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
 
 % 2. Crea l'asse del tempo basato sulla lunghezza di data_array
-t_array = (0:size(data_f, 1)-1)' / fs_channels;
+t_array = (0:size(data_f, 1)-1)' / target;
 
 % 3. Grafico di confronto
-figure('Name', 'Sincronizzazione Canale 17 e Canale 7');
+figure('Name', 'Sincronizzazione Trigger e Canale 7');
 
-% Subplot 1: Canale Trigger (17)
+% Subplot 1: Canale Trigger (1)
 ax1 = subplot(2,1,1);
-plot(t_array, data_f(:,17), 'Color', [0.4 0.4 0.4]); % Grigio
+plot(t_array, data_f(:,1), 'Color', [0.4 0.4 0.4]); % Grigio
 hold on;
-plot(t_array(locs_trig), data_f(locs_trig, 17), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
+plot(t_array(locs_trig), data_f(locs_trig, 1), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
 ylabel('Trigger [mV]');
 title('Canale 17 - Picchi identificati');
 grid on;
 
 % Subplot 2: Canale 7 (EMG Rectus Femoralis)
 ax2 = subplot(2,1,2);
-plot(t_array, data_f(:,6), 'b'); % Blu
+plot(t_array, data_f(:,8), 'b'); % Blu
 hold on;
 % USIAMO GLI STESSI IDENTICI INDICI (locs_trig)
-plot(t_array(locs_trig), data_f(locs_trig, 6), 'ro', 'MarkerFaceColor', 'r');
+plot(t_array(locs_trig), data_f(locs_trig, 8), 'ro', 'MarkerFaceColor', 'r');
 ylabel('EMG - Canale 7 [mV]');
 xlabel('Tempo [s]');
 title('Canale 7 - Punti di sincronizzazione');
@@ -246,6 +222,8 @@ for i = 1:17
     title(channels{i}, 'Interpreter', 'none');
 end
 
+
+
 %% 8 - Identification of the first 30 pedaling cycles at target cadence +/- 4RPM
 locs_angle=locs_trig;
 time_CYCLE=t(locs_angle);
@@ -265,7 +243,6 @@ plot(time_CYCLE(good_cycle),mean_cadence(good_cycle),'--r*'), xlabel ('#cycles')
 
 EMG_mean=zeros(9,360);
 
-figure(30)
 for n=1:17
    
 EMG_matOK{n}.values(:, 1:length(good_cycle)) = EMG_mat{n}.values(:, good_cycle);
@@ -277,44 +254,74 @@ EMG_matOK{n}.values(:, 1:length(good_cycle)) = EMG_mat{n}.values(:, good_cycle);
     EMG_std(n,:)= std(EMG_matOK_norm{n}.values');
     
     
-    if (n<10)
-        subplot(5,2,n)
-        hold on
-        plot(AngBase,EMG_matOK{n}.values,'r')
+   
+end
+
+
+
+
+% Parametri iniziali
+page = 6; 
+c_cycles = [0.7 0.7 0.7]; % Grigio chiaro per i singoli cicli
+c_mean = [0 0.4470 0.7410]; % Blu per la media
+AngBase = linspace(0, 359, 360);
+
+% Inizializzazione matrici per i risultati
+EMG_mean = zeros(17, 360);
+EMG_std = zeros(17, 360);
+
+for i = 1:17
+% 9 - NORMALIZZAZIONE E CALCOLO PROFILI
+    % Seleziona solo i cicli buoni (già estratti in precedenza in EMG_mat)
+    EMG_matOK{i}.values = EMG_mat{i}.values(:, good_cycle);
+    
+    % Normalizzazione all'ampiezza mediana dei picchi
+    norm_value(i) = median(max(EMG_matOK{i}.values));
+    if norm_value(i) == 0, norm_value(i) = 1; end % Evita divisione per zero
+    
+    EMG_matOK_norm{i}.values = EMG_matOK{i}.values ./ norm_value(i);
+    
+    % Calcolo Media e Deviazione Standard (lungo i cicli, quindi riga per riga)
+    EMG_mean(i, :) = mean(EMG_matOK_norm{i}.values, 2)';
+    EMG_std(i, :) = std(EMG_matOK_norm{i}.values, 0, 2)';
+
+   % 10 - LOGICA DI PLOTTING A PAGINE
+    % Crea una nuova figura ogni 'page' canali (6)
+    if mod(i-1, page) == 0
+        figure('Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
+        ti = tiledlayout(3, 2, 'TileSpacing', 'compact'); 
+        on_page = ceil(i / page);
+        title(ti, ['EMG Normalized Profiles - Page ', num2str(on_page)], 'FontSize', 14);
+    end
+   
+
+    nexttile;
+    hold on;
+    
+    % 1. Plotta i 30 cicli normalizzati in grigio (sullo sfondo)
+    plot(AngBase, EMG_matOK_norm{i}.values, 'Color', c_cycles, 'LineWidth', 0.5);
+    
+    % 2. Plotta la Media (linea blu spessa)
+    plot(AngBase, EMG_mean(i,:), 'Color', c_mean, 'LineWidth', 2);
+    
+    % 3. Plotta la Deviazione Standard (linee tratteggiate)
+    plot(AngBase, EMG_mean(i,:) + EMG_std(i,:), '--', 'Color', c_mean, 'LineWidth', 1);
+    plot(AngBase, EMG_mean(i,:) - EMG_std(i,:), '--', 'Color', c_mean, 'LineWidth', 1);
+    
+    % Formattazione grafico
+    title(channels{i}, 'Interpreter', 'none');
+    xlim([0 360]);
+    xticks([0 90 180 270 360]);
+    grid on;
+    
+    if mod(i-1, 2) == 0 % Solo sulla colonna di sinistra metti la label Y
+        ylabel('Norm. Amplitude');
+    end
+    if i > (on_page-1)*page + 4 % Solo sulle ultime tile della pagina metti la label X
+        xlabel('Crank angle [°]');
     end
 end
 
-figure
-sgtitle('Right leg','FontSize',14, 'FontWeight','b')
-for n=1:9
-    subplot(5,2,n);
-    plot(AngBase,EMG_matOK_norm{n}.values,'Color',c),  xlim([0  360]), xlabel('Crank angle [°]');
-    hold on
-    plot(AngBase,EMG_mean(n,:),'Color','k','LineWidth',2)
-    plot(AngBase,EMG_mean(n,:)-EMG_std(n,:),'--k','LineWidth',2)
-    plot(AngBase,EMG_mean(n,:)+EMG_std(n,:),'--k','LineWidth',2)
-    
-    switch n
-        case 1
-            ylabel('EMG norm - GlMax')
-        case 2
-            ylabel('EMG norm - BFlong')
-        case 3
-            ylabel('EMG norm - BFshort')
-        case 4
-            ylabel('EMG norm - GL')
-        case 5
-            ylabel('EMG norm - So')
-        case 6
-            ylabel('EMG norm - TFL')
-        case 7
-            ylabel('EMG norm - RF')
-        case 8
-            ylabel('EMG - VL')
-        case 9
-            ylabel('EMG - TA')
-    end
-end
 
 
 
@@ -368,8 +375,8 @@ idx_fine_t = locs_trig(n_ciclo + 1);
 figure('Name', 'Analisi Muscolare Ciclo Trike', ...
        'Units', 'normalized', 'Position', [0.05 0.05 0.9 0.85]);
 
-for i = 1:16
-    subplot(4, 4, i);
+for i = 2:17
+    subplot(4, 4, i-1);
     
     % Estrazione segnale (dal file filtrato del trike)
     segmento_raw = data_f(idx_inizio_t:idx_fine_t, i); 
@@ -403,46 +410,42 @@ sgtitle(['Analisi Pedalata FES-Trike - Ciclo n. ' num2str(n_ciclo) ' (0-360°)']
 
 
 %% --- CALCOLO AREA MEDIA (iEMG) PER TUTTI I CANALI ---
-
-% 1. Scegli quali trigger usare (cambia tra heel_strikes e locs_trig a seconda del test)
-trig_attuali = locs_trig; % Metti locs_trig per il Trike, heel_strikes per il Cammino
+trig_attuali = locs_trig; 
 n_cicli = length(trig_attuali) - 1;
 
-% 2. Inizializza matrice per i risultati (Cicli x Canali)
+% Inizializza correttamente per 16 canali
 aree_cicli = zeros(n_cicli, 16);
 
 for c = 1:n_cicli
     idx_in = trig_attuali(c);
     idx_fi = trig_attuali(c+1);
     
-    for ch = 1:16
-        % Prendiamo il segnale rettificato (valore assoluto)
+    col_idx = 1; % Indice per la colonna della matrice aree_cicli
+    for ch = 2:17
         seg_rect = abs(data_f(idx_in:idx_fi, ch));
         
-        % Calcoliamo l'area con la regola dei trapezi e normalizziamo per la durata
-        % Questo ci dà l'attivazione media del muscolo in quel ciclo
-        aree_cicli(c, ch) = trapz(seg_rect) / length(seg_rect);
+        % Riempire dalla colonna 1 alla 16
+        aree_cicli(c, col_idx) = trapz(seg_rect) / length(seg_rect);
+        col_idx = col_idx + 1;
     end
 end
 
-% 3. Calcoliamo la media finale per ogni muscolo
+% Calcolo della media (risultato: vettore 1x16)
 area_finale = mean(aree_cicli, 1);
 
-% 4. Creazione Tabella Risultati
-tabella_risultati = table(channels(1:16)', area_finale', ...
+% Creazione Tabella (entrambi devono essere vettori colonna 16x1)
+tabella_risultati = table(channels(2:17)', area_finale', ...
     'VariableNames', {'Muscolo', 'Area_Media_iEMG'});
 
-% Mostra la tabella nella Command Window
 disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
 disp(tabella_risultati);
-
 
 %%
 
 % --- CALCOLO SIMMETRIA MUSCOLARE ---
 
-area_R = mean(area_finale_gait(1:8));  % Media aree gamba destra
-area_L = mean(area_finale_gait(9:16)); % Media aree gamba sinistra
+area_R = mean(area_finale(1:8));  % Media aree gamba destra
+area_L = mean(area_finale(9:16)); % Media aree gamba sinistra
 
 % Indice di Simmetria (Symmetry Index)
 % Se > 100, la destra lavora più della sinistra

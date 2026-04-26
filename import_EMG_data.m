@@ -17,7 +17,7 @@ data = readtable(fullpath_emg, opts);
 %% TO RUN ONLY IN CASE OF EMG DATA FROM PEDALLING TESTS
 % Resampling to perform in case of pedaling EMG data !!!
 
-    trigger = data.AnalogInputAdapter20_76940_; % 18
+    trigger = data.AnalogInputAdapter18_76940_; % 20
     rightTA = data.RightTA_80489_;
     rightGAL = data.RightGAL_80431_;
     rightSOL = data.RightSOL_80441_;
@@ -29,7 +29,7 @@ data = readtable(fullpath_emg, opts);
     leftTA = data.LeftTA_81004_;
     leftGAL = data.LeftGAL_80580_;
     leftSOL = data.LeftSOL_80453_;
-    leftGAM = data.LeftGAM_80584_; % 81016
+    leftGAM = data.LeftGAM_81016_; % 81016 80584
     leftRF = data.LeftRF_80402_;
     leftVM = data.LeftVM_80490_;
     leftSM = data.LeftSM_80521_;
