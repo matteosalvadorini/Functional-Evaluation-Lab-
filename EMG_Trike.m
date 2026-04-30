@@ -1,170 +1,173 @@
-%% INTRO
+%% EMG_Trike.m — FES-Cycling EMG Analysis
+% Requires: data_resampled (struct from import_EMG_data.m)
+%           target (resampling frequency = 2148 Hz)
+%           target_cadence (30 or 50 RPM — set this before running!)
 
-% Right Leg (1-9)
-% 1. Tibialis anterior R 
-% 2. Gastro lat R 
-% 3. Soleus R 
-% 4. Gastro med R 
-% 5. Rectus R   
-% 6. Vastus Lat R 
-% 7. Vastus Med R 
-% 8. Semitendinous R 
-% 9. Tibialis anterior L 
-% 10. Gastro lat L 
-% 11. Soleus L 
-% 12. Gastro med L 
-% 13. Rectus L 
-% 14. Vastus Lat L 
-% 15. Vastus Med L 
-% 16. Semitendinous L 
+%% PARAMETERS — SET THESE BEFORE RUNNING
+target_cadence = 35;   % Change to 50 for the 50 RPM session
+fs_EMG = target;       % Should be 2148 Hz from import script
 
-channels = {'Trigger','Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
-           'Rectus R', 'Vastus Lat R', 'Vastus Med R', 'Semitendinous R', ...
-           'Tibialis Ant L', 'Gastro Lat L', 'Soleus L', 'Gastro Med L', ...
-           'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L'};
+channel_names = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', ...
+                 'Rectus R', 'Vastus Lat R', 'Vastus Med R', 'Semitendinous R', ...
+                 'Tibialis Ant L', 'Gastro Lat L', 'Soleus L', 'Gastro Med L', ...
+                 'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L'};
 
-
-
-%convert struct to array: easier to work on...
+%% CONVERT STRUCT TO MATRIX
+% Trigger is column 1, EMG channels are columns 2-17
 data_array = struct2array(data_resampled);
+% data_array columns: [trigger, TA_R, GAL_R, SOL_R, GAM_R, RF_R, VL_R, VM_R, SM_R,
+%                              TA_L, GAL_L, SOL_L, GAM_L, RF_L, VL_L, VM_L, SM_L]
 
+trigger_col = 1;       % trigger is column 1
+emg_cols    = 2:17;    % EMG channels are columns 2-17
 
+n_samples = size(data_array, 1);
+t = (0:n_samples-1)' / fs_EMG;
 
-%% PLOT RAW DATA
-
-
-
-%calculate time for one channel, will be the same length for the others
-n_sample = size(data_array, 1);
-t = (0:n_sample-1) / target;
-t=t';
-
-page=6;
-
-for i = 1:17
-
-
-    % --- PAGE BREAK LOGIC ---
-    % Creates a new figure every 6 channels
+%% PLOT RAW EMG DATA (excluding trigger)
+page = 6;
+for i = 1:16
     if mod(i-1, page) == 0
-        figure('Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
-        ti = tiledlayout(3, 2, 'TileSpacing', 'compact'); % Grid 3x2 per page
-        on_page = ceil(i / page);
-        title(ti, ['EMG raw data - Page ', num2str(on_page)]);
+        figure('Units','normalized','Position',[0.1 0.1 0.8 0.8]);
+        tl = tiledlayout(3, 2, 'TileSpacing','compact');
+        title(tl, ['EMG Raw Data (Trike) - Page ' num2str(ceil(i/page))]);
     end
-
-
     nexttile;
-    plot(data_array(:,i));
-    title(channels{i}, 'Interpreter', 'none');
+    plot(t, data_array(:, i+1));   % +1 because col 1 is trigger
+    title(channel_names{i}, 'Interpreter','none');
+    xlabel('Time (s)'); ylabel('Amplitude (mV)');
 end
 
+%% BAND-PASS FILTERING (EMG only, NOT trigger)
+W  = [20 400];
+Wn = W / (fs_EMG / 2);
+[b, a] = butter(4, Wn, 'bandpass');   % 4th order
 
-%% BAND-PASS FILTERING
+emg_raw   = data_array(:, emg_cols);  % [N x 16]
+emg_clean = fillmissing(emg_raw, 'constant', 0);
+data_f    = filtfilt(b, a, emg_clean);  % [N x 16]
 
-% Band-pass filter 5th order
-% cut off frequency = [20-400] Hz 
-W= [20; 400];
-Wn = W/(target/2); %normalized frequency
-[b,a ]= butter(5,Wn,"bandpass");
-
-
-
-%cancel NaN values: every NaN values = 0 with:
-data_isnan=fillmissing(data_array, 'constant', 0);
-%filter for every channel
-data_f= filtfilt(b,a,data_isnan);
-
-
-
-%calculate AGAIN (gives problem with dimension) time for one channel, will be the same length for the others
-n_sample = size(data_f, 1);
-t_f = (0:n_sample-1) / target;
-t_f=t_f';
-
-
-page=6;
-
-for i = 1:17
-
- 
-    % --- PAGE BREAK LOGIC ---
-    % Creates a new figure every 6 channels
-
+%% PLOT FILTERED EMG
+for i = 1:16
     if mod(i-1, page) == 0
-        figure('Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
-        ti = tiledlayout(3, 2, 'TileSpacing', 'compact'); % Griglia 3x2 per pagina
-        on_page = ceil(i / page);
-        title(ti, ['EMG_filtered - Page ', num2str(on_page)]);
+        figure('Units','normalized','Position',[0.1 0.1 0.8 0.8]);
+        tl = tiledlayout(3, 2, 'TileSpacing','compact');
+        title(tl, ['EMG Filtered (Trike) - Page ' num2str(ceil(i/page))]);
     end
-
-
     nexttile;
-    plot(data_f(:,i));
-    title(channels{i}, 'Interpreter', 'none');
+    plot(t, data_f(:,i));
+    title(channel_names{i}, 'Interpreter','none');
+    xlabel('Time (s)'); ylabel('Amplitude (mV)');
 end
 
+%% TRIGGER-BASED CYCLE DETECTION
+trigger_sig = data_array(:, trigger_col);
 
+% Adaptive threshold: 50% of trigger max
+trig_thresh = 0.5 * max(trigger_sig);
+min_cycle_samples = round(fs_EMG * 0.5);  % min 0.5s between cycles
 
+[~, locs_trig] = findpeaks(trigger_sig, ...
+    'MinPeakHeight',   trig_thresh, ...
+    'MinPeakDistance', min_cycle_samples);
 
+fprintf('Pedaling cycles detected: %d\n', length(locs_trig)-1);
 
+% Plot trigger with detected peaks
+figure('Name','Trigger - Cycle Detection');
+plot(t, trigger_sig, 'Color',[0.5 0.5 0.5]); hold on;
+plot(t(locs_trig), trigger_sig(locs_trig), 'ro', 'MarkerFaceColor','r');
+xlabel('Time (s)'); ylabel('Trigger (mV)');
+title('Trigger Channel - Detected Cycle Starts');
+grid on;
 
+%% CADENCE FILTERING — keep only cycles at target ± 4 RPM
+cycle_durations = diff(t(locs_trig));          % seconds per cycle
+cycle_cadence   = 60 ./ cycle_durations;       % RPM
 
-%% 4 - Power spectral density estimate & extraction of spectral parameters
+good_cycle = find(cycle_cadence >= target_cadence - 4 & ...
+                  cycle_cadence <= target_cadence + 4);
 
+fprintf('Good cycles (%.0f ± 4 RPM): %d out of %d\n', ...
+        target_cadence, length(good_cycle), length(cycle_cadence));
 
-[P_EMG,F] = periodogram(data_f, rectwin(max(size(data_f))),512,fs_channels); 
+% Plot cadence
+figure('Name','Cadence per Cycle');
+plot(cycle_cadence, '--*b'); hold on;
+plot(good_cycle, cycle_cadence(good_cycle), '*r');
+yline(target_cadence, 'k--');
+yline(target_cadence+4, 'r:');
+yline(target_cadence-4, 'r:');
+xlabel('Cycle #'); ylabel('Cadence (RPM)');
+title(['Cadence per Cycle — target: ' num2str(target_cadence) ' RPM']);
+legend('All cycles','Good cycles','Target'); grid on;
 
-% plot of the power spectral density estimate of the right RF
-figure ()
-subplot(2,1,1)
-plot(F,10*log10(P_EMG(:,7)),'b')
-title('Periodogram Power Spectral Density Estimate','b')
-xlabel('Frequency (Hz)')
-ylabel('Power/frequency (dB/Hz)')
-grid on
-ylim([ -120 0])
-xlim([0 fs_channels/2])
+%% TIME NORMALIZATION (0-360° per cycle) — ALL 16 EMG CHANNELS
+AngBase = linspace(0, 359, 360);
+n_cycles_total = length(locs_trig) - 1;
 
-%estimates the mean frequency & median frequency
-for n=2:17
-       Mean_freq(n,1)=meanfreq( data_f(:,n) , fs_channels );
-       Mean_freq(n,2) = meanfreq( P_EMG(:,n) , F ); 
-
-       Med_freq(n,1) = medfreq( data_f(:,n) , fs_channels );
-       Med_freq(n,2) = medfreq( P_EMG(:,n) , F ); 
+% EMG_mat: cell array {16 channels}, each [360 x n_cycles]
+EMG_mat = cell(1, 16);
+for m = 1:16
+    EMG_mat{m} = zeros(360, n_cycles_total);
 end
 
+for i = 1:n_cycles_total
+    idx_start = locs_trig(i);
+    idx_end   = locs_trig(i+1);
+    t_orig = linspace(idx_start, idx_end, idx_end - idx_start + 1);
+    t_norm = linspace(idx_start, idx_end, 360);
+
+    for m = 1:16   % FIXED: was 1:12, now correctly 1:16
+        seg = data_f(idx_start:idx_end, m);
+        EMG_mat{m}(:,i) = interp1(t_orig, seg, t_norm, 'spline');
+    end
+end
+
+%% AMPLITUDE NORMALIZATION + MEAN PROFILE (good cycles only)
+n_valid = length(good_cycle);
+
+EMG_good      = cell(1, 16);
+norm_value    = zeros(1, 16);
+EMG_good_norm = cell(1, 16);
+EMG_mean      = zeros(16, 360);
+EMG_std       = zeros(16, 360);
+
+for m = 1:16
+    EMG_good{m} = EMG_mat{m}(:, good_cycle);  % [360 x n_valid]
+
+    % Normalization: median of peak values across good cycles
+    peak_vals    = max(abs(EMG_good{m}), [], 1);  % 1 x n_valid
+    norm_value(m) = median(peak_vals);
+    if norm_value(m) == 0, norm_value(m) = 1; end
+
+    EMG_good_norm{m} = EMG_good{m} ./ norm_value(m);
+
+    % Mean and std across cycles (dim 2 = cycles)
+    EMG_mean(m,:) = mean(EMG_good_norm{m}, 2)';
+    EMG_std(m,:)  = std(EMG_good_norm{m}, 0, 2)';
+end
+
+%% PLOT TRIGGER-BASED CYCLE DETECTION
 
 
-%% 6 - Identification of the pedaling cycles
-
-
-% 1. Trova gli indici dei picchi nel canale trigger (Colonna 17)
-% Usiamo la frequenza originale (es. 2222.22) se non hai ancora resampato
-[pks_trig, locs_trig] = findpeaks(data_array(:,1), 'MinPeakHeight', 0.5, 'MinPeakDistance', fs_channels*0.8);
-
-% 2. Crea l'asse del tempo basato sulla lunghezza di data_array
-t_array = (0:size(data_array, 1)-1)' / target;
-
-% 3. Grafico di confronto
 figure('Name', 'Sincronizzazione Trigger e Canale 7');
 
 % Subplot 1: Canale Trigger (1)
 ax1 = subplot(2,1,1);
-plot(t_array, data_array(:,1), 'Color', [0.4 0.4 0.4]); % Grigio
+plot(t, data_array(:,1), 'Color', [0.4 0.4 0.4]); % Grigio
 hold on;
-plot(t_array(locs_trig), data_array(locs_trig, 1), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
+plot(t(locs_trig), data_array(locs_trig, 1), 'ro', 'MarkerFaceColor', 'r'); % Picchi rossi
 ylabel('Trigger [mV]');
 title('Canale 17 - Picchi identificati');
 grid on;
 
 % Subplot 2: Canale 7 (EMG Rectus Femoralis)
 ax2 = subplot(2,1,2);
-plot(t_array, data_f(:,8), 'b'); % Blu
+plot(t, data_f(:,8), 'b'); % Blu
 hold on;
 % USIAMO GLI STESSI IDENTICI INDICI (locs_trig)
-plot(t_array(locs_trig), data_f(locs_trig, 8), 'ro', 'MarkerFaceColor', 'r');
+plot(t(locs_trig), data_f(locs_trig, 8), 'ro', 'MarkerFaceColor', 'r');
 ylabel('EMG - Canale 7 [mV]');
 xlabel('Tempo [s]');
 title('Canale 7 - Punti di sincronizzazione');
@@ -174,362 +177,112 @@ grid on;
 linkaxes([ax1, ax2], 'x');
 
 
-%% 7 - Time normalization of all pedaling cycles
-
-AngBase=linspace(0,359,360);
-
-for n=1:17 %number of EMG channels
-    EMG_mat{n}.values=zeros(360,size(locs_trig,1)-1);
-    EMG_matOK{n}.values=zeros(360,30);
-    EMG_matOK_norm{n}.values=zeros(360,30);
-end
-locs_emg=locs_trig;
-
-for i = 1: size(locs_trig)-1
-    
-    t_orig = linspace(locs_emg(i)+1,locs_emg(i+1),locs_emg(i+1)-locs_emg(i));
-    t_N = linspace(locs_emg(i)+1,locs_emg(i+1),360);
-    
-    for n=1:12
-        EMG_mat{n}.values(:,i) = interp1(t_orig,data_f(locs_emg(i)+1:locs_emg(i+1),n), t_N, 'spline');
-    end
-    
-end
-
-c = [0 0.4470 0.7410];
 
 
+%% PLOT NORMALIZED MEAN PROFILES
+c_cycles = [0.7 0.7 0.7];
+c_mean   = [0 0.4470 0.7410];
 
-
-page=6;
-
-for i = 1:17
-
-
-    % --- PAGE BREAK LOGIC ---
-    % Creates a new figure every 6 channels
+for i = 1:16
     if mod(i-1, page) == 0
-        figure('Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
-        ti = tiledlayout(3, 2, 'TileSpacing', 'compact'); % Grid 3x2 per page
-        on_page = ceil(i / page);
-        title(ti, ['EMG raw data - Page ', num2str(on_page)]);
+        figure('Units','normalized','Position',[0.1 0.1 0.8 0.8]);
+        tl = tiledlayout(3, 2, 'TileSpacing','compact');
+        title(tl, ['EMG Normalized Profiles (Trike) - Page ' num2str(ceil(i/page))]);
     end
+    nexttile; hold on;
 
-
-    nexttile;
-    plot(AngBase,EMG_mat{i}.values,'Color',c), ylabel('EMG - GlMax'), xlim([0  360]), xlabel('Crank angle [°]');
-
-    title(channels{i}, 'Interpreter', 'none');
-end
-
-
-
-%% 8 - Identification good cycles at target cadence +/- 4RPM
-locs_angle=locs_trig;
-time_CYCLE=t(locs_angle);
-mean_cadence=60./diff(time_CYCLE); %mean cadence in RPM
-
-target_cadence=35;
-good_cycle=find(and(mean_cadence<=target_cadence+4, mean_cadence>=target_cadence-4));
-
-
-figure
-plot(time_CYCLE(1:end-1),mean_cadence,'--*'), xlabel ('#cycles'),ylabel('cadence [rpm]')
-hold on
-plot(time_CYCLE(good_cycle),mean_cadence(good_cycle),'--r*'), xlabel ('#cycles'),ylabel('cadence [rpm]')
-
-
-%% 9 - Amplitude normalization to median peak & 10 - Calculation of mean activation profile 
-
-EMG_mean=zeros(9,360);
-
-for n=1:17
-   
-EMG_matOK{n}.values(:, 1:length(good_cycle)) = EMG_mat{n}.values(:, good_cycle);
-    
-    norm_value(n)=median(max(EMG_matOK{n}.values));
-    EMG_matOK_norm{n}.values(:,:)=EMG_matOK{n}.values(:,:)./norm_value(n);
-    
-    EMG_mean(n,:)= mean(EMG_matOK_norm{n}.values');
-    EMG_std(n,:)= std(EMG_matOK_norm{n}.values');
-    
-    
-   
-end
-
-
-
-
-% Parametri iniziali
-page = 6; 
-c_cycles = [0.7 0.7 0.7]; % Grigio chiaro per i singoli cicli
-c_mean = [0 0.4470 0.7410]; % Blu per la media
-AngBase = linspace(0, 359, 360);
-
-% Inizializzazione matrici per i risultati
-EMG_mean = zeros(17, 360);
-EMG_std = zeros(17, 360);
-
-for i = 1:17
-% 9 - NORMALIZZAZIONE E CALCOLO PROFILI
-    % Seleziona solo i cicli buoni (già estratti in precedenza in EMG_mat)
-    EMG_matOK{i}.values = EMG_mat{i}.values(:, good_cycle);
-    
-    % Normalizzazione all'ampiezza mediana dei picchi
-    norm_value(i) = median(max(EMG_matOK{i}.values));
-    if norm_value(i) == 0, norm_value(i) = 1; end % Evita divisione per zero
-    
-    EMG_matOK_norm{i}.values = EMG_matOK{i}.values ./ norm_value(i);
-    
-    % Calcolo Media e Deviazione Standard (lungo i cicli, quindi riga per riga)
-    EMG_mean(i, :) = mean(EMG_matOK_norm{i}.values, 2)';
-    EMG_std(i, :) = std(EMG_matOK_norm{i}.values, 0, 2)';
-
-   % 10 - LOGICA DI PLOTTING A PAGINE
-    % Crea una nuova figura ogni 'page' canali (6)
-    if mod(i-1, page) == 0
-        figure('Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
-        ti = tiledlayout(3, 2, 'TileSpacing', 'compact'); 
-        on_page = ceil(i / page);
-        title(ti, ['EMG Normalized Profiles - Page ', num2str(on_page)], 'FontSize', 14);
-    end
-   
-
-    nexttile;
-    hold on;
-    
-    % 1. Plotta i 30 cicli normalizzati in grigio (sullo sfondo)
-    plot(AngBase, EMG_matOK_norm{i}.values, 'Color', c_cycles, 'LineWidth', 0.5);
-    
-    % 2. Plotta la Media (linea blu spessa)
+    % Individual cycles in grey
+    plot(AngBase, EMG_good_norm{i}, 'Color', c_cycles, 'LineWidth', 0.5);
+    % Mean in blue
     plot(AngBase, EMG_mean(i,:), 'Color', c_mean, 'LineWidth', 2);
-    
-    % 3. Plotta la Deviazione Standard (linee tratteggiate)
+    % ±1 SD dashed
     plot(AngBase, EMG_mean(i,:) + EMG_std(i,:), '--', 'Color', c_mean, 'LineWidth', 1);
     plot(AngBase, EMG_mean(i,:) - EMG_std(i,:), '--', 'Color', c_mean, 'LineWidth', 1);
-    
-    % Formattazione grafico
-    title(channels{i}, 'Interpreter', 'none');
-    xlim([0 360]);
-    xticks([0 90 180 270 360]);
+
+    title(channel_names{i}, 'Interpreter','none');
+    xlim([0 360]); xticks([0 90 180 270 360]);
+    xlabel('Crank angle (°)'); ylabel('Norm. Amplitude');
     grid on;
-    
-    if mod(i-1, 2) == 0 % Solo sulla colonna di sinistra metti la label Y
-        ylabel('Norm. Amplitude');
-    end
-    if i > (on_page-1)*page + 4 % Solo sulle ultime tile della pagina metti la label X
-        xlabel('Crank angle [°]');
-    end
 end
 
-
-
-
-%%
-
-
-
-% --- ESTRATTO DAL PUNTO A ---
-n_cicli = length(locs_trig) - 1;
-muscolo_id = 5; % Esempio: Rectus Femoralis
-matrice_cicli = zeros(n_cicli, 360);
-
-for i = 1:n_cicli
-    % Estrai il segmento
-    segmento = data_f(locs_trig(i):locs_trig(i+1), muscolo_id);
-    
-    % Normalizzazione temporale a 360 punti (Interpolazione)
-    x_orig = 1:length(segmento);
-    x_new = linspace(1, length(segmento), 360);
-    matrice_cicli(i, :) = interp1(x_orig, segmento, x_new);
-end
-
-% Calcolo Media e Deviazione Standard
-emg_medio = mean(matrice_cicli, 1);
-emg_std = std(matrice_cicli, 0, 1);
-
-% Plot
-figure;
-fill([0:359, 359:-1:0], [emg_medio+emg_std, fliplr(emg_medio-emg_std)], 'b', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
-hold on; plot(0:359, emg_medio, 'b', 'LineWidth', 2);
-title(['Profilo Medio Muscolo ', num2str(muscolo_id)]);
-xlabel('Ciclo di Pedalata [gradi]'); ylabel('Ampiezza [mV]');
-
-
-
-%%
-
-%% --- PLOT DINAMICA MUSCOLARE TRIKE (SINGOLO CICLO) ---
-
-% 1. Parametri e controllo (usiamo i locs_trig del Trike)
-n_ciclo = 5; % Scegliamo un ciclo a metà prova (es. il quinto)
-if length(locs_trig) < n_ciclo + 1
-    error('Cicli insufficienti. Controlla il rilevamento dei trigger del Trike.');
-end
-
-% 2. Definizione indici
-idx_inizio_t = locs_trig(n_ciclo);
-idx_fine_t = locs_trig(n_ciclo + 1);
-
-% 3. Creazione Figura
-figure('Name', 'Analisi Muscolare Ciclo Trike', ...
-       'Units', 'normalized', 'Position', [0.05 0.05 0.9 0.85]);
-
-for i = 2:17
-    subplot(4, 4, i-1);
-    
-    % Estrazione segnale (dal file filtrato del trike)
-    segmento_raw = data_f(idx_inizio_t:idx_fine_t, i); 
-    
-    % Creiamo l'asse X in gradi (0-360) per questo segmento
-    gradi_ciclo = linspace(0, 360, length(segmento_raw));
-    
-    % Calcolo inviluppo per evidenziare il timing
-    segmento_env = envelope(abs(segmento_raw), 150, 'peak'); 
-    
-    % Plot
-    plot(gradi_ciclo, segmento_raw, 'Color', [0.7 0.7 0.7]); % Grigio
-    hold on;
-    plot(gradi_ciclo, segmento_env, 'b', 'LineWidth', 1.5);    % Blu per il Trike
-    
-    % Titolo canali
-    title(channels{i}, 'FontSize', 10);
-    
-    % Estetica specifica per il Trike
-    grid on;
-    xlim([0 360]);
-    xticks([0 90 180 270 360]);
-    axis tight;
-    
-    if mod(i, 4) ~= 1, yticks([]); end 
-    if i < 13, xticks([]); end
-end
-
-sgtitle(['Analisi Pedalata FES-Trike - Ciclo n. ' num2str(n_ciclo) ' (0-360°)']);
-
-
-
-%% --- CALCOLO AREA MEDIA (iEMG) PER TUTTI I CANALI ---
-trig_attuali = locs_trig; 
-n_cicli = length(trig_attuali) - 1;
-
-% Inizializza correttamente per 16 canali
-aree_cicli = zeros(n_cicli, 16);
-
-for c = 1:n_cicli
-    idx_in = trig_attuali(c);
-    idx_fi = trig_attuali(c+1);
-    
-    col_idx = 1; % Indice per la colonna della matrice aree_cicli
-    for ch = 2:17
-        seg_rect = abs(data_f(idx_in:idx_fi, ch));
-        
-        % Riempire dalla colonna 1 alla 16
-        aree_cicli(c, col_idx) = trapz(seg_rect) / length(seg_rect);
-        col_idx = col_idx + 1;
-    end
-end
-
-% Calcolo della media (risultato: vettore 1x16)
-area_finale = mean(aree_cicli, 1);
-
-% Creazione Tabella (entrambi devono essere vettori colonna 16x1)
-tabella_risultati = table(channels(2:17)', area_finale', ...
-    'VariableNames', {'Muscolo', 'Area_Media_iEMG'});
-
-disp('--- RISULTATI AREA MEDIA PER MUSCOLO ---');
-disp(tabella_risultati);
-
-%%
-
-% --- CALCOLO SIMMETRIA MUSCOLARE ---
-
-
-
-
-%% Amplitude normalization through median peak activation across valid cycles
-% For each muscle, the peak envelope value is extracted from each valid cycle. 
-% The median of these peak values is then used as a normalization factor, 
-% and each cycle is divided by the corresponding muscle-specific median 
-% peak value.
-
-n_valid = min(30, length(good_cycles));
-
-norm_value = zeros(1,16);
-
-for m = 1:16
-    peaks = zeros(n_valid,1);
-    
-    for i = 1:n_valid
-        peaks(i) = max(EMG_cycles_norm{good_cycles(i)}(:,m));
-    end
-    
-    norm_value(m) = median(peaks);
-end
-
-EMG_cycles_norm_amp = cell(n_valid,1);
-
+%% iEMG AREA PER CYCLE AND MUSCLE
+AUC = zeros(n_valid, 16);
 for i = 1:n_valid
-    EMG_cycles_norm_amp{i} = zeros(360,16);
     for m = 1:16
-        EMG_cycles_norm_amp{i}(:,m) = EMG_cycles_norm{good_cycles(i)}(:,m) / norm_value(m);
+        AUC(i,m) = trapz(AngBase, abs(EMG_good_norm{m}(:,i)));
     end
 end
 
+mean_AUC = mean(AUC, 1);  % 1x16
 
-% Total activation level for each muscle
-% For each normalized cycle and each muscle, the area under the curve (AUC)
-% of the EMG envelope is computed. This represents the total activation 
-% level of that muscle over the full pedaling cycle.
+% Display table
+T_results = table(channel_names', mean_AUC', ...
+    'VariableNames', {'Muscle', 'Mean_iEMG_AUC'});
+disp('--- MEAN iEMG AUC PER MUSCLE ---');
+disp(T_results);
 
-n_cicli = length(EMG_cycles_norm_amp);
-n_muscoli = 16;
+%% SYMMETRY INDEX (standard formula, per muscle pair, per cycle)
+% Muscle pairs: TA, GastroLat, Soleus, GastroMed, Rectus, VastusLat, VastusMed, Semitend
+muscle_pairs = {'TA','Gastro Lat','Soleus','Gastro Med', ...
+                'Rectus','Vastus Lat','Vastus Med','Semitendinous'};
 
-AUC = zeros(n_cicli, n_muscoli);
-ang = linspace(0,360,360);
-
-for i = 1:n_cicli
-    for m = 1:n_muscoli
-        AUC(i,m) = trapz(ang, EMG_cycles_norm_amp{i}(:,m));
-    end
-end
-
-% Simmetry index computation for each muscle
-% For each pair of homologous right–left muscles, a symmetry index (SI) is 
-% calculated using the AUC values. This provides a quantitative estimate of
-% how balanced the activation is between the two sides.
-
-SI = zeros(n_cicli,8);
-
+SI       = zeros(n_valid, 8);
 for k = 1:8
-    R = AUC(:,k);
-    L = AUC(:,k+8);
-
-    SI(:,k) = ((R - L) ./ (0.5*(R + L))) * 100;
+    R = AUC(:, k);      % right muscle
+    L = AUC(:, k+8);    % left muscle (homologous)
+    SI(:,k) = abs(R - L) ./ (0.5*(R + L)) * 100;
 end
 
-SI_abs = abs(SI);
-SI_mean = mean(SI,1);
-SI_abs_mean = mean(SI_abs,1);
+SI_mean     = mean(SI, 1);
+SI_abs_mean = mean(abs(SI), 1);
 
-% Results
-% The mean SI and mean absolute SI are calculated across cycles for each 
-% muscle pair and displayed in a summary table, providing an overview of 
-% inter-limb symmetry during pedaling.
+fprintf('\n--- SYMMETRY INDEX PER MUSCLE PAIR ---\n');
+T_SI = table(muscle_pairs', SI_mean', SI_abs_mean', ...
+    'VariableNames', {'Muscle_Pair','SI_mean_pct','SI_abs_mean_pct'});
+disp(T_SI);
 
-muscle_names = {'TA','GastroLat','Soleus','GastroMed','Rectus','VastusLat','VastusMed','Semitend'};
-disp(table(muscle_names', SI_mean', SI_abs_mean', ...
-    'VariableNames', {'Muscle','SI_mean','SI_abs_mean'}))
+% Overall symmetry
+area_R = mean(mean_AUC(1:8));
+area_L = mean(mean_AUC(9:16));
+SI_overall = abs(area_R - area_L) / (0.5*(area_R + area_L)) * 100;
+fprintf('Overall Symmetry Index: %.2f%%\n', SI_overall);
 
-area_R = mean(area_finale(1:8));  % Media aree gamba destra
-area_L = mean(area_finale(9:16)); % Media aree gamba sinistra
+%% PLOT iEMG BAR CHART
+figure('Name','Mean iEMG per Muscle (Trike)', ...
+       'Units','normalized','Position',[0.1 0.1 0.8 0.5]);
+bar(mean_AUC);
+hold on;
+xline(8.5, 'r--', 'LineWidth', 2);
+xticks(1:16); xticklabels(channel_names); xtickangle(45);
+ylabel('Mean iEMG AUC (normalized)');
+title(['Mean iEMG per Muscle — ' num2str(target_cadence) ' RPM']);
+grid on;
 
-% Indice di Simmetria (Symmetry Index)
-% Se > 100, la destra lavora più della sinistra
-% Se < 100, la sinistra lavora più della destra
-SI_muscolare = (area_R / area_L) * 100;
+%% PLOT SYMMETRY INDEX BAR CHART
+figure('Name','Symmetry Index per Muscle Pair (Trike)', ...
+       'Units','normalized','Position',[0.1 0.1 0.7 0.45]);
+bar(SI_mean);
+xticks(1:8); xticklabels(muscle_pairs); xtickangle(30);
+ylabel('Mean SI (%)');
+title(['Symmetry Index per Muscle Pair — ' num2str(target_cadence) ' RPM']);
+yline(0, 'k--'); grid on;
 
-fprintf('\n--- SIMMETRIA ---\n');
-fprintf('Area Media Destra (R): %.4f\n', area_R);
-fprintf('Area Media Sinistra (L): %.4f\n', area_L);
-fprintf('Indice di Simmetria Muscolare: %.2f%%\n', SI_muscolare);
+%% EXAMPLE CYCLE PLOT (middle good cycle)
+mid = good_cycle(round(end/2));
+idx_s = locs_trig(mid);
+idx_e = locs_trig(mid+1);
+gradi = linspace(0, 360, idx_e - idx_s + 1);
+
+figure('Name','Example Pedaling Cycle - All Muscles', ...
+       'Units','normalized','Position',[0.05 0.05 0.9 0.85]);
+for i = 1:16
+    subplot(4,4,i);
+    seg = data_f(idx_s:idx_e, i);
+    env = movmean(abs(seg), round(fs_EMG*0.05));  % 50ms envelope
+    plot(gradi, seg, 'Color',[0.7 0.7 0.7]); hold on;
+    plot(gradi, env, 'b', 'LineWidth', 1.5);
+    title(channel_names{i}); grid on;
+    xlim([0 360]); xticks([0 90 180 270 360]);
+    xlabel('Crank angle (°)');
+end
+sgtitle(['Example Pedaling Cycle — Cycle #' num2str(mid)]);fprintf('Indice di Simmetria Muscolare: %.2f%%\n', SI_muscolare);
