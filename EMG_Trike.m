@@ -18,7 +18,7 @@ data_array = struct2array(data_resampled);
 
 time_col    = 1;
 emg_cols    = 2:17;
-trigger_col = size(data_array,2);   % last column = Analog Input Adapter
+trigger_col = 1;   % last column = Analog Input Adapter
 
 n_samples = size(data_array,1);
 
@@ -299,4 +299,3 @@ for i = 1:16
     xlim([0 360]); xticks([0 90 180 270 360]);
     xlabel('Crank angle (°)');
 end
-sgtitle(['Example Pedaling Cycle — Cycle #' num2str(mid)]);fprintf('Indice di Simmetria Muscolare: %.2f%%\n', SI_muscolare);
