@@ -12,16 +12,16 @@ channel_names = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', .
                  'Tibialis Ant L', 'Gastro Lat L', 'Soleus L', 'Gastro Med L', ...
                  'Rectus L', 'Vastus Lat L', 'Vastus Med L', 'Semitendinous L'};
 
+
 %% CONVERT STRUCT TO MATRIX
-% Trigger is column 1, EMG channels are columns 2-17
 data_array = struct2array(data_resampled);
-% data_array columns: [trigger, TA_R, GAL_R, SOL_R, GAM_R, RF_R, VL_R, VM_R, SM_R,
-%                              TA_L, GAL_L, SOL_L, GAM_L, RF_L, VL_L, VM_L, SM_L]
 
-trigger_col = 1;       % trigger is column 1
-emg_cols    = 2:17;    % EMG channels are columns 2-17
+time_col    = 1;
+emg_cols    = 2:17;
+trigger_col = size(data_array,2);   % last column = Analog Input Adapter
 
-n_samples = size(data_array, 1);
+n_samples = size(data_array,1);
+
 t = (0:n_samples-1)' / fs_EMG;
 
 %% PLOT RAW EMG DATA (excluding trigger)
@@ -63,21 +63,35 @@ end
 %% TRIGGER-BASED CYCLE DETECTION
 trigger_sig = data_array(:, trigger_col);
 
-% Adaptive threshold: 50% of trigger max
-trig_thresh = 0.5 * max(trigger_sig);
-min_cycle_samples = round(fs_EMG * 0.5);  % min 0.5s between cycles
+% For 35 RPM, expected cycle duration ≈ 1.7 sec
+% We only enforce minimum distance between peaks
+min_cycle_samples = round(fs_EMG * 1.2);
 
+% Detect peaks WITHOUT amplitude threshold
 [~, locs_trig] = findpeaks(trigger_sig, ...
-    'MinPeakHeight',   trig_thresh, ...
     'MinPeakDistance', min_cycle_samples);
 
 fprintf('Pedaling cycles detected: %d\n', length(locs_trig)-1);
 
-% Plot trigger with detected peaks
+%% Remove abnormal cycles (missing trigger cases)
+cycle_lengths = diff(locs_trig);
+
+valid_cycles = cycle_lengths < mean(cycle_lengths) + 2*std(cycle_lengths);
+
+locs_trig = locs_trig([true; valid_cycles]);
+
+fprintf('Valid cycles after removing abnormal ones: %d\n', length(locs_trig)-1);
+
+%% Plot trigger with detected peaks
 figure('Name','Trigger - Cycle Detection');
-plot(t, trigger_sig, 'Color',[0.5 0.5 0.5]); hold on;
-plot(t(locs_trig), trigger_sig(locs_trig), 'ro', 'MarkerFaceColor','r');
-xlabel('Time (s)'); ylabel('Trigger (mV)');
+plot(t, trigger_sig, 'Color',[0.5 0.5 0.5]); 
+hold on;
+
+plot(t(locs_trig), trigger_sig(locs_trig), ...
+    'ro', 'MarkerFaceColor','r');
+
+xlabel('Time (s)');
+ylabel('Trigger (mV)');
 title('Trigger Channel - Detected Cycle Starts');
 grid on;
 

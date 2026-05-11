@@ -17,23 +17,32 @@ data = readtable(fullpath_emg, opts);
 %% TO RUN ONLY IN CASE OF EMG DATA FROM PEDALLING TESTS
 % Resampling to perform in case of pedaling EMG data !!!
 
-    trigger = data.AnalogInputAdapter18_76940_; % 20
-    rightTA = data.RightTA_80489_;
-    rightGAL = data.RightGAL_80431_;
-    rightSOL = data.RightSOL_80441_;
-    rightGAM = data.RightGAM_80516_;
-    rightRF = data.RightRF_76638_;
-    rightVM = data.RightVM_80472_;
-    rightVL = data.RightVL_77577_;
-    rightSM = data.RightSM_76751_;
-    leftTA = data.LeftTA_81004_;
-    leftGAL = data.LeftGAL_80580_;
-    leftSOL = data.LeftSOL_80453_;
-    leftGAM = data.LeftGAM_81016_; % 81016 80584
-    leftRF = data.LeftRF_80402_;
-    leftVM = data.LeftVM_80490_;
-    leftSM = data.LeftSM_80521_;
-    leftVL = data.LeftVL_80411_;
+    %% TO RUN ONLY IN CASE OF EMG DATA FROM PEDALLING TESTS
+
+vars = data.Properties.VariableNames;
+
+% Trigger (always last Analog Input column)
+trigger = data{:, contains(vars,'AnalogInputAdapter')};
+
+% Right side muscles
+rightTA  = data{:, contains(vars,'RightTA')};
+rightGAL = data{:, contains(vars,'RightGAL')};
+rightSOL = data{:, contains(vars,'RightSOL')};
+rightGAM = data{:, contains(vars,'RightGAM')};
+rightRF  = data{:, contains(vars,'RightRF')};
+rightVM  = data{:, contains(vars,'RightVM')};
+rightVL  = data{:, contains(vars,'RightVL')};
+rightSM  = data{:, contains(vars,'RightSM')};
+
+% Left side muscles
+leftTA   = data{:, contains(vars,'LeftTA')};
+leftGAL  = data{:, contains(vars,'LeftGAL')};
+leftSOL  = data{:, contains(vars,'LeftSOL')};
+leftGAM  = data{:, contains(vars,'LeftGAM')};
+leftRF   = data{:, contains(vars,'LeftRF')};
+leftVM   = data{:, contains(vars,'LeftVM')};
+leftVL   = data{:, contains(vars,'LeftVL')};
+leftSM   = data{:, contains(vars,'LeftSM')};
     
     target = 2148;
     fs_trigger = 2222.2222;
