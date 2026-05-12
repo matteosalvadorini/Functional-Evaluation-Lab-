@@ -17,7 +17,7 @@ end
 
 % Separate EMG and trigger
 data_emg     = data(:, 1:16);
-data_trigger = data(:, 17);   % NOT filtered
+%data_trigger = data(:, 17);   % NOT filtered
 
 %% PLOT RAW EMG
 page = 6;

@@ -1,4 +1,5 @@
-
+clear all
+clc
 
 % Prompt user to pick a CSV file
 [filename, pathname] = uigetfile('*.csv', 'Select a CSV file');

@@ -15,7 +15,7 @@ data = table2array(data);
 
 % Separate EMG and trigger
 data_emg     = data(:, 1:16);
-data_trigger = data(:, 17);
+%data_trigger = data(:, 17);
 %% PLOT RAW EMG DATA
 page = 6;
 for i = 1:16
