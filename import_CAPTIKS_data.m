@@ -1,8 +1,6 @@
 %% Acceleration Import
 
-clear all
-close all 
-clc
+
 
 % select the folder containing all the acceleration files (cpk_devices)
 folder = uigetdir(pwd, 'Select folder containing CSV files');

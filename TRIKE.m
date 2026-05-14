@@ -91,8 +91,12 @@ fprintf('L''Indice di Simmetria per i 30 cicli selezionati è: %.2f%%\n', SI);
 % Estraiamo i dati
 dist_vector = datatrike.totalDistance;
 
+
+time_distance=length(datatrike.totalDistance);
+
+
 % Calcolo della distanza netta percorsa 
-distanza_percorsa = dist_vector(end) - dist_vector(1);
+distanza_percorsa = dist_vector(time_distance) - dist_vector(time_distance - 18000);
 
 % Stampa del risultato in console
 fprintf('Distanza totale percorsa nella sessione: %.2f metri\n', distanza_percorsa);
@@ -111,7 +115,7 @@ plot(t_trike(end), dist_vector(end), 'ro', 'MarkerFaceColor', 'r');
 line([t_trike(end) t_trike(end)], [dist_vector(1) dist_vector(end)], ...
     'Color', 'k', 'LineStyle', '--', 'LineWidth', 1);
 
-title('Distanza Accumulata durante la sessione');
+title('Distance in the last 3min');
 xlabel('Tempo [s]');
 ylabel('Distanza [m]');
 text(t_trike(end)*0.6, dist_vector(end)*0.5, ...
