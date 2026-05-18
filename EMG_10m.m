@@ -12,28 +12,18 @@ channel_names = {'Tibialis Ant R', 'Gastro Lat R', 'Soleus R', 'Gastro Med R', .
 
 % Convert table to matrix if needed
 if istable(data)
-    data = table2array(data);
+    data_array = table2array(data);
 end
 
 % Separate EMG and trigger
-data_emg     = data(:, 1:16);
-%data_trigger = data(:, 17);   % NOT filtered
+data_emg     = data_array(:, 1:16);
+%trigger_sig = data_array(:, 17);   % NOT filtered
 
-%% PLOT RAW EMG
-page = 6;
-for i = 1:16
-    if mod(i-1, page) == 0
-        figure('Units','normalized','Position',[0.1 0.1 0.8 0.8]);
-        tl = tiledlayout(3, 2, 'TileSpacing', 'compact');
-        title(tl, ['EMG Raw Data (10mWT) - Page ' num2str(ceil(i/page))]);
-    end
-    nexttile;
-    n = size(data_emg, 1);
-    t = (0:n-1) / fs_EMG;
-    plot(t, data_emg(:,i));
-    title(channel_names{i}, 'Interpreter', 'none');
-    xlabel('Time (s)'); ylabel('Amplitude (mV)');
-end
+n_samples = size(data_array,1);
+
+t = (0:n_samples-1)' / fs_EMG;
+
+
 
 %% BAND-PASS FILTERING (EMG only)
 W  = [20 400];
@@ -42,6 +32,7 @@ Wn = W / (fs_EMG / 2);
 
 data_emg_clean = fillmissing(data_emg, 'constant', 0);
 data_f = filtfilt(b, a, data_emg_clean);  % [N x 16]
+
 %% ARTIFACT REJECTION — Combined approach
 N_samples = size(data_f, 1);
 data_f_clean = data_f;
@@ -63,20 +54,7 @@ for j = 1:16
 end
 
 
-%% PLOT FILTERED EMG
-for i = 1:16
-    if mod(i-1, page) == 0
-        figure('Units','normalized','Position',[0.1 0.1 0.8 0.8]);
-        tl = tiledlayout(3, 2, 'TileSpacing', 'compact');
-        title(tl, ['EMG Filtered (10mWT) - Page ' num2str(ceil(i/page))]);
-    end
-    nexttile;
-    n = size(data_f, 1);
-    t = (0:n-1) / fs_EMG;
-    plot(t, data_f(:,i));
-    title(channel_names{i}, 'Interpreter', 'none');
-    xlabel('Time (s)'); ylabel('Amplitude (mV)');
-end
+
 
 %% ARTIFACT REJECTION — STEP 1: Global threshold (3x std)
 N_samples = size(data_f, 1);
@@ -100,6 +78,36 @@ for j = 1:16
 end
 
 fprintf('Channel-specific clipping applied (99th percentile per channel)\n');
+
+
+%%
+
+[~, locs_trig] = findpeaks(trigger_sig,'MinPeakHeight',2);
+
+fprintf('Peaks detected: %d\n', length(locs_trig));
+
+%%
+
+
+
+
+
+%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %% GAIT SEGMENTATION (Virtual Heel Strike via Tibialis Anterior)
 % Use BOTH left and right TA for robustness
@@ -129,7 +137,7 @@ min_step_samples = round(fs_EMG * 0.3);  % min 0.3s between steps
     'MinPeakHeight',   thresh_L, ...
     'MinPeakDistance', min_step_samples);
 
-fprintf('\nRight heel strikes detected: %d\n', length(hs_R));
+fprintf('\nRight heel strikesx detected: %d\n', length(hs_R));
 fprintf('Left heel strikes detected:  %d\n', length(hs_L));
 
 if length(hs_R) < 2 || length(hs_L) < 2
@@ -159,6 +167,17 @@ fprintf('Speed:          %.3f m/s\n', speed_ms);
 fprintf('Cadence:        %.1f steps/min\n', cadence);
 fprintf('Mean step dur:  %.3f s\n', mean_step_dur);
 fprintf('Total steps:    %d\n', n_steps);
+
+
+
+
+
+
+
+
+
+
+
 
 %% iEMG PER RIGHT STEPS (hs_R(s) → hs_R(s+1))
 n_R = length(hs_R) - 1;
